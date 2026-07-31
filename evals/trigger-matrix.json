@@ -1,0 +1,35 @@
+{
+  "skill": "lottie-maker",
+  "cases": [
+    {
+      "prompt": "Create a 1080x1080 looping Lottie icon for a successful upload.",
+      "should_trigger": true,
+      "route": "create"
+    },
+    {
+      "prompt": "Revise this Lottie JSON so the title holds longer, but preserve unknown fields.",
+      "should_trigger": true,
+      "route": "revise"
+    },
+    {
+      "prompt": "Diagnose why this Lottie file works in one player but not another.",
+      "should_trigger": true,
+      "route": "diagnose"
+    },
+    {
+      "prompt": "Make a custom 640x360 animation at 30 FPS and verify the render hashes.",
+      "should_trigger": true,
+      "route": "create"
+    },
+    {
+      "prompt": "Generate a photorealistic PNG of a mountain landscape.",
+      "should_trigger": false,
+      "route": null
+    },
+    {
+      "prompt": "Open my After Effects project and publish the composition.",
+      "should_trigger": false,
+      "route": null
+    }
+  ]
+}
