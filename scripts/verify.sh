@@ -15,6 +15,7 @@ if (codex.name !== "skill-lottie-maker" || claude.name !== "lottie-maker") throw
 ' "$repo_root"
 
 node "$repo_root/evals/validate.mjs"
+node "$repo_root/examples/validate.mjs"
 npm test --prefix "$skill_root"
 npm run lint --prefix "$skill_root"
 npm run format:check --prefix "$skill_root"
