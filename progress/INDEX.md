@@ -9,6 +9,7 @@ workflow.
 
 | Status | Item | Folder | Scope | Ticket | Plan | Created | Notes |
 |---|---|---|---|---|---|---|---|
+| `done` | Strengthen layout contract and publish a Threads showcase | `progress/2026-07-31-strengthen-layout-contract/` | `skill-lottie-maker` | N/A | N/A | 2026-07-31 | 0.2.0 composition contract and deterministic portrait forward test verified |
 | `review` | Add reproducible showcase examples | `progress/2026-07-31-add-showcase-examples/` | `skill-lottie-maker` | N/A | N/A | 2026-07-31 | 3 deterministic examples and 1 diagnostic fixture verified |
 | `review` | Build lottie-maker standalone skill | `progress/2026-07-31-build-lottie-maker/` | `skill-lottie-maker` | N/A | [build-lottie-maker-lottie-maker-implementation-plan.md](_plans/build-lottie-maker-lottie-maker-implementation-plan.md) | 2026-07-31 |  |
 
