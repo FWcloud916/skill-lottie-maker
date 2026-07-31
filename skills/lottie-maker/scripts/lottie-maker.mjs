@@ -23,6 +23,7 @@ import {
   validateBundle,
 } from "./lib/lottie.mjs";
 import { PROFILES, resolveProfile } from "./lib/profiles.mjs";
+import { ffmpegArgs } from "./lib/media.mjs";
 import { renderSamples } from "./lib/render.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -338,21 +339,7 @@ async function encodeMedia(output, report, format) {
   }
   const pattern = path.join(output, "frame-%04d.png");
   const target = path.join(output, `preview.${format}`);
-  const args =
-    format === "mp4"
-      ? [
-          "-y",
-          "-framerate",
-          String(report.fps),
-          "-i",
-          pattern,
-          "-pix_fmt",
-          "yuv420p",
-          "-movflags",
-          "+faststart",
-          target,
-        ]
-      : ["-y", "-framerate", String(report.fps), "-i", pattern, target];
+  const args = ffmpegArgs(pattern, target, report.fps, format);
   await execFileAsync("ffmpeg", args, { maxBuffer: 10 * 1024 * 1024 });
 }
 

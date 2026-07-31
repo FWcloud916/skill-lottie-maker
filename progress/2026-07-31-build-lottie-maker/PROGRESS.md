@@ -31,6 +31,7 @@ coupling.
 - [x] Run skill/plugin validation, dependency audit, complete verification, and visual QA.
 - [x] Place the verified repository at the requested `skill-lottie-maker` destination.
 - [x] Create the public GitHub repository and organize the implementation into feature commits.
+- [x] Fix H.264 output for odd-height profiles discovered during the first trial video.
 
 ## Work log
 
@@ -45,6 +46,7 @@ coupling.
 - Placed the verified clean repository at /Users/kdanmobile/Documents/private/skill-lottie-maker with node_modules excluded.
 - Created https://github.com/FWcloud916/skill-lottie-maker and organized source, tests, docs, and distribution into focused commits.
 - Prepared final progress commit after public repository creation.
+- Trial-video rendering exposed 1200×675 yuv420p incompatibility; added deterministic 1px padding and regression coverage.
 
 ## Outcome
 
@@ -52,6 +54,6 @@ Implementation and review gates pass. The clean repository was placed at the req
 directory without `node_modules`, committed by feature, and connected to its public GitHub remote.
 
 **Final status:** Implemented and verified on `main`; tracker remains in review because no PR merge occurred.
-**PR / Commit:** `1888045`, `43fe446`, `6674eb7`, `f9baeef`
+**PR / Commit:** `1888045`, `43fe446`, `6674eb7`, `f9baeef`, `3f41c0e`
 **Follow-ups:** Install dependencies with `npm ci --ignore-scripts --prefix skills/lottie-maker`
 before local development.
