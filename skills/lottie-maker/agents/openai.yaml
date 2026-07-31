@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lottie Maker"
+  short_description: "Create, edit, diagnose, and verify portable Lottie"
+  default_prompt: "Use $lottie-maker to create and verify a portable Lottie animation bundle."
