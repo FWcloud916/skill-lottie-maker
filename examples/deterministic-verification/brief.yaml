@@ -1,0 +1,40 @@
+version: 1
+id: deterministic-verification
+profile: landscape-16x9
+poster_frame: 108
+loop: false
+safe_area:
+  top: 0.05
+  right: 0.05
+  bottom: 0.05
+  left: 0.05
+motion:
+  intent: Show unsafe input blocked and two deterministic renders producing
+    matching hashes
+  personality: restrained
+  reduced_motion: hold the poster state
+copy:
+  title: Inspect. Block. Render twice.
+  source: Lottie JSON
+  inspect: Inspect
+  blocked: Unsafe asset blocked
+  renderA: Render A
+  renderB: Render B
+  match: SHA-256 match
+palette:
+  background:
+    - 0.976
+    - 0.98
+    - 0.984
+    - 1
+  foreground:
+    - 0.082
+    - 0.145
+    - 0.267
+    - 1
+fonts:
+  - name: Noto Sans CJK TC
+    family: Noto Sans CJK TC
+    style: Regular
+    path: assets/fonts/NotoSansCJKtc-Regular.otf
+assets: []

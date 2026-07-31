@@ -68,6 +68,13 @@ node skills/lottie-maker/scripts/lottie-maker.mjs verify ./work/hello-motion --o
 Profiles are `landscape-16x9`, `portrait-9x16`, `square-1x1`, `icon`, and `custom`. Custom mode also
 requires `--width`, `--height`, `--fps`, and `--duration`.
 
+## Reproducible examples
+
+The [`examples`](examples/) directory contains three validated bundles: a multilingual gear loop,
+a four-profile canvas comparison, and a deterministic inspection/rendering gate. It also includes
+one intentionally invalid remote-asset fixture for read-only diagnosis. Every valid example is
+rendered twice and hash-compared by the repository verification gate.
+
 To revise the only copy of an imported animation safely, clone it byte-for-byte and audit the
 path-level diff after editing:
 

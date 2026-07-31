@@ -1,0 +1,39 @@
+version: 1
+id: skill-improvement-gear-loop
+profile: custom
+canvas:
+  width: 720
+  height: 720
+fps: 30
+duration_seconds: 4
+poster_frame: 90
+loop: true
+safe_area:
+  top: 0.05
+  right: 0.05
+  bottom: 0.05
+  left: 0.05
+motion:
+  intent: 用互相咬合並無縫循環的齒輪表達 skill 透過觀察、改善、驗證與重複而持續進化
+  personality: restrained
+  reduced_motion: hold the poster state
+copy:
+  title: Skill 循環改善
+  cycle: Observe → Refine → Verify → Repeat
+palette:
+  background:
+    - 0.976
+    - 0.98
+    - 0.984
+    - 1
+  foreground:
+    - 0.082
+    - 0.145
+    - 0.267
+    - 1
+fonts:
+  - name: Noto Sans CJK TC
+    family: Noto Sans CJK TC
+    style: Regular
+    path: assets/fonts/NotoSansCJKtc-Regular.otf
+assets: []
