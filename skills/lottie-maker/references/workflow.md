@@ -20,10 +20,12 @@ editing. Never use a remote URL, data URL, symlink, or path outside the bundle.
 
 1. Reserve a kebab-case bundle ID and confirm the destination is absent.
 2. Run `init --dry-run`, inspect the paths, then scaffold.
-3. Finalize `brief.yaml`; update `motion.md` before authoring JSON.
+3. Finalize `brief.yaml`; define composition checkpoints for stable holds and update `motion.md`
+   before authoring JSON.
 4. Bind each `copy` entry to a same-named native text layer. Add a slot only when the target player
    supports it, and always retain the matching fallback.
-5. Run `validate`. Fix all errors without switching profile or renderer.
+5. Run `validate`. Fix copy binding, safe-area, overlap, reading-order, text-fit, card-padding, and
+   equal-size errors without switching profile or renderer.
 6. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
 7. Revise, regenerate previews, and run `verify` until deterministic.
 8. Generate full frames or MP4/GIF only when the user requests them.

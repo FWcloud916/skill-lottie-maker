@@ -37,16 +37,17 @@ skills/lottie-maker/       Canonical Agent Skill and runtime
 ## 5. Runtime architecture
 
 `lottie-maker.mjs` parses commands and owns output behavior. `profiles.mjs` resolves bounded canvas
-and timeline values. `lottie.mjs` creates, loads, inspects, and validates bundles. `render.mjs` loads
-CanvasKit, records Skottie diagnostics, renders PNGs, and computes hashes. `io.mjs` centralizes safe
-path and JSON utilities.
+and timeline values. `lottie.mjs` creates, loads, inspects, and validates bundles;
+`composition.mjs` validates checkpoint hierarchy, bounds, reading order, text fit, and card geometry.
+`render.mjs` loads CanvasKit, records Skottie diagnostics, renders PNGs, and computes hashes.
+`io.mjs` centralizes safe path and JSON utilities.
 
 ## 6. Data flow
 
 Creation resolves `brief.yaml` into a starter `animation.json` and local font. Inspection reads JSON
 and assets but does not write. Validation combines inspection with brief-to-animation invariants.
-Rendering is allowed only after validation. Verification renders twice into separate directories and
-compares ordered frame hashes.
+Composition validation samples declared stable frames before rendering is allowed. Verification
+renders twice into separate directories and compares ordered frame hashes.
 
 ## 7. Portability and security boundaries
 

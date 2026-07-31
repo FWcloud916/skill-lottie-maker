@@ -261,6 +261,26 @@ async function init(options) {
   };
   const profile = resolveProfile(brief);
   brief.poster_frame = Math.max(0, Math.round(profile.frameCount * 0.75));
+  brief.composition = {
+    version: 1,
+    checkpoints: [
+      {
+        frame: brief.poster_frame,
+        reading_order: ["title"],
+        blocks: [
+          {
+            id: "title",
+            slot: "title",
+            role: "anchor",
+            bounds: [0.08, 0.36, 0.84, 0.28],
+            align: "left",
+            max_lines: 2,
+            min_font_size: 12,
+          },
+        ],
+      },
+    ],
+  };
   const animation = createAnimation(brief, profile);
   const motion = `# ${id} motion rationale\n\n- Intent: ${brief.motion.intent}\n- Profile: ${profile.profile} (${profile.width}x${profile.height}, ${profile.fps} FPS, ${profile.duration}s)\n- Focal group: title\n- Poster frame: ${brief.poster_frame}\n- Assets: bundled Noto Sans CJK TC font only\n- QA: inspect entrance, stable hold, text shaping, safe area, final frame, and deterministic hashes.\n`;
   const fontSource = path.resolve(

@@ -15,7 +15,7 @@ async function canvasKit() {
   return CanvasKitInit({ locateFile: (file) => path.join(base, file) });
 }
 
-function sampleFrames(frameCount, posterFrame) {
+function sampleFrames(frameCount, posterFrame, checkpoints = []) {
   const candidates = [
     0,
     Math.floor(frameCount * 0.1),
@@ -25,6 +25,7 @@ function sampleFrames(frameCount, posterFrame) {
     Math.floor(frameCount * 0.9),
     frameCount - 1,
     posterFrame,
+    ...checkpoints,
   ];
   return [
     ...new Set(
@@ -67,7 +68,13 @@ export async function renderSamples(
   }
   const frames = allFrames
     ? Array.from({ length: frameCount }, (_, index) => index)
-    : sampleFrames(frameCount, posterFrame);
+    : sampleFrames(
+        frameCount,
+        posterFrame,
+        (bundle.brief?.composition?.checkpoints ?? []).map(
+          (checkpoint) => checkpoint.frame,
+        ),
+      );
   const ck = await canvasKit();
   const surface = ck.MakeSurface(animation.w, animation.h);
   if (!surface)
@@ -131,9 +138,22 @@ export async function renderSamples(
     const poster = rendered.find((item) => item.frame === posterFrame);
     if (!poster) throw new Error("poster frame was not rendered");
     await writeFile(path.join(outputDir, "poster.png"), poster.bytes);
+    const contactFrames = allFrames
+      ? new Set(
+          sampleFrames(
+            frameCount,
+            posterFrame,
+            (bundle.brief?.composition?.checkpoints ?? []).map(
+              (checkpoint) => checkpoint.frame,
+            ),
+          ),
+        )
+      : null;
     await writeContactSheet(
       ck,
-      rendered,
+      contactFrames
+        ? rendered.filter((item) => contactFrames.has(item.frame))
+        : rendered,
       animation.w,
       animation.h,
       path.join(outputDir, "contact-sheet.png"),

@@ -1,6 +1,6 @@
 {
   "name": "skill-lottie-maker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Create, revise, diagnose, validate, and deterministically preview portable Lottie animation bundles.",
   "author": {
     "name": "FWcloud916",
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Lottie Maker",
     "shortDescription": "Make and verify portable Lottie animations.",
-    "longDescription": "A portable Agent Skill with a deterministic CanvasKit workflow for creating, revising, diagnosing, validating, and previewing Lottie JSON bundles.",
+    "longDescription": "A portable Agent Skill with composition contracts and a deterministic CanvasKit workflow for creating, revising, diagnosing, validating, and previewing Lottie JSON bundles.",
     "developerName": "FWcloud916",
     "category": "Creativity",
     "capabilities": ["Write"],

@@ -4,6 +4,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import YAML from "yaml";
 
+import { validateComposition } from "./composition.mjs";
 import { LIMITS, resolveProfile } from "./profiles.mjs";
 import { readJson, safeLocalFile, sha256 } from "./io.mjs";
 
@@ -550,6 +551,9 @@ export async function validateBundle(bundle) {
         if (!bound)
           report.errors.push(`copy.${slot} must match its named text layer`);
       }
+      report.errors.push(
+        ...validateComposition(bundle.brief, bundle.animation, profile),
+      );
     } catch (error) {
       report.errors.push(error.message);
     }

@@ -45,10 +45,16 @@ node <skill-dir>/scripts/lottie-maker.mjs help
    `--duration <seconds>`; FPS multiplied by duration must be an integer frame count.
 
 3. Write the rationale before changing `animation.json`. Treat `brief.yaml` as the copy, timing,
-   font, asset, and poster source of truth. Keep every text fallback playable without slot support.
-4. Use one focal group, readable holds, motion with a semantic purpose, deterministic geometry,
-   and a meaningful final state. Do not introduce facts or claims absent from user sources.
-5. Validate, render, visually inspect, revise, and verify. Never silently switch renderer or
+   font, asset, poster, and composition source of truth. Keep every text fallback playable without
+   slot support.
+4. Declare composition checkpoints at the poster and every stable information state. Give each
+   visible block normalized bounds, a semantic role, and an explicit reading order. Text blocks
+   also declare fit limits; card-backed blocks declare padding and, when applicable, an equal-size
+   group. Use one focal group per checkpoint and recompose for a new aspect ratio instead of scaling
+   a finished layout.
+5. Use readable holds, motion with a semantic purpose, deterministic geometry, and a meaningful
+   final state. Do not introduce facts or claims absent from user sources.
+6. Validate, render, visually inspect, revise, and verify. Never silently switch renderer or
    loosen the portable profile after a failure.
 
 ## Revise
@@ -115,7 +121,8 @@ Completion requires:
 
 - `validate` passes for a new or normalized bundle.
 - Poster and contact sheet were inspected for copy, font shaping, clipping, safe area, layer order,
-  pacing, transient states, final state, and reduced-motion meaning.
+  reading order, hierarchy, alignment, spacing, card consistency, pacing, transient states, final
+  state, and reduced-motion meaning.
 - Two identical renders have matching hashes via `verify`.
 - All referenced assets remain local, contained, regular files; no credentials or remote content
   were introduced.
