@@ -200,7 +200,20 @@ layers.push(shapeLayer("reflow-track", [pathShape([[-670, 0], [0, 0], [670, 0]],
 // Act 3: validation pipeline and deterministic convergence.
 layers.push(textLayer("act3Title", "先要求它證明", 140, 180, 68, 192, 288));
 layers.push(textLayer("act3Body", "Create  →  Inspect  →  Render A / B", 140, 285, 38, 192, 288, { color: color.muted }));
-layers.push(shapeLayer("pipeline-track", [pathShape([[-650, 0], [-220, 0], [220, 0], [650, 0]], color.accent, 8)], 960, 530, 196, 288));
+layers.push(
+  shapeLayer(
+    "pipeline-track",
+    [
+      pathShape([[-540, 0], [-330, 0]], color.accent, 8),
+      pathShape([[-110, 0], [110, 0]], color.accent, 8),
+      pathShape([[330, 0], [540, 0]], color.accent, 8),
+    ],
+    960,
+    530,
+    196,
+    288,
+  ),
+);
 const pipeline = [
   { name: "act3Create", label: "Create", x: 310 },
   { name: "act3Inspect", label: "Inspect", x: 740 },
@@ -218,14 +231,14 @@ layers.push(textLayer("act3Blocked", "unsafe branch   ×   blocked", 960, 940, 3
 // Act 4: interlocked improvement cycle.
 layers.push(textLayer("act4Title", "Skill 會循環改善", 140, 145, 64, 288, OP, { keep: true }));
 layers.push(textLayer("act4Body", "Create · Revise · Diagnose · Verify", 140, 240, 34, 292, OP, { keep: true, color: color.muted }));
-layers.push(gearLayer("gear-create", 500, 500, 143, 294, true, 0, color.info));
-layers.push(gearLayer("gear-revise", 780, 500, 143, 296, false, 15, color.card));
-layers.push(gearLayer("gear-diagnose", 500, 780, 143, 298, false, 15, color.card));
-layers.push(gearLayer("gear-verify", 780, 780, 143, 300, true, 0, color.info));
+layers.push(gearLayer("gear-create", 500, 500, 143, 294, true, 3.75, color.info));
+layers.push(gearLayer("gear-revise", 751, 500, 143, 296, false, 18.75, color.card));
+layers.push(gearLayer("gear-diagnose", 500, 751, 143, 298, false, 18.75, color.card));
+layers.push(gearLayer("gear-verify", 751, 751, 143, 300, true, 3.75, color.info));
 layers.push(textLayer("act4Create", "Create", 500, 512, 30, 304, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
-layers.push(textLayer("act4Revise", "Revise", 780, 512, 30, 306, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
-layers.push(textLayer("act4Diagnose", "Diagnose", 500, 792, 28, 308, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
-layers.push(textLayer("act4Verify", "Verify", 780, 792, 30, 310, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
+layers.push(textLayer("act4Revise", "Revise", 751, 512, 30, 306, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
+layers.push(textLayer("act4Diagnose", "Diagnose", 500, 763, 28, 308, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
+layers.push(textLayer("act4Verify", "Verify", 751, 763, 30, 310, OP, { keep: true, color: color.accent, justify: 2, offset: 18 }));
 layers.push(shapeLayer("cta-card", [rectangle(760, 190, color.info, color.accent, 32)], 1410, 560, 310, OP, { keep: true, offset: 42 }));
 layers.push(textLayer("act4Cta", "先要求它證明，再要求它輸出", 1410, 575, 38, 316, OP, { keep: true, color: color.accent, justify: 2, offset: 24 }));
 layers.push(textLayer("brand", "imfw.io  ×  lottie-maker", 1030, 875, 28, 320, OP, { keep: true, color: color.muted, offset: 16 }));
