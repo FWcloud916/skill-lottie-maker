@@ -50,5 +50,5 @@ The deterministic Threads showcase is now a verified 16:9 bundle with semantic i
 synchronized gears. Publishing and upload remain outside this repository.
 
 **Final status:** done
-**PR / Commit:** pending
+**PR / Commit:** `9f2daf9`
 **Follow-ups:** Review the copied media in brag-talker before any R2 upload or Threads publication.
