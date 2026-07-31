@@ -1,0 +1,14 @@
+{
+  "name": "skill-lottie-maker",
+  "owner": {
+    "name": "FWcloud916"
+  },
+  "plugins": [
+    {
+      "name": "lottie-maker",
+      "source": "./",
+      "description": "Create and verify portable Lottie animation bundles.",
+      "version": "0.1.0"
+    }
+  ]
+}

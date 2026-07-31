@@ -1,0 +1,29 @@
+{
+  "name": "skill-lottie-maker",
+  "version": "0.1.0",
+  "description": "Create, revise, diagnose, validate, and deterministically preview portable Lottie animation bundles.",
+  "author": {
+    "name": "FWcloud916",
+    "url": "https://github.com/FWcloud916"
+  },
+  "homepage": "https://github.com/FWcloud916/skill-lottie-maker#readme",
+  "repository": "https://github.com/FWcloud916/skill-lottie-maker",
+  "license": "MIT",
+  "keywords": ["lottie", "animation", "motion-design", "agent-skill"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lottie Maker",
+    "shortDescription": "Make and verify portable Lottie animations.",
+    "longDescription": "A portable Agent Skill with a deterministic CanvasKit workflow for creating, revising, diagnosing, validating, and previewing Lottie JSON bundles.",
+    "developerName": "FWcloud916",
+    "category": "Creativity",
+    "capabilities": ["Write"],
+    "websiteURL": "https://github.com/FWcloud916/skill-lottie-maker",
+    "defaultPrompt": [
+      "Create a portable Lottie animation from my brief.",
+      "Diagnose why this Lottie file does not render correctly.",
+      "Revise this Lottie bundle and verify deterministic output."
+    ],
+    "brandColor": "#315C9E"
+  }
+}
