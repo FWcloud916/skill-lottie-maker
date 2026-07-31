@@ -2,8 +2,8 @@ version: 1
 id: threads-skill-intro
 profile: custom
 canvas:
-  width: 1080
-  height: 1920
+  width: 1920
+  height: 1080
 fps: 24
 duration_seconds: 16
 poster_frame: 360
@@ -21,6 +21,10 @@ copy:
   act1Title: lottie-maker
   act1Body: 不是把 JSON 動起來就好
   act1Code: '{ "create": "portable",  "verify": "deterministic" }'
+  act1Copy: copy
+  act1Timing: timing
+  act1Assets: assets
+  act1Layout: layout
   act2Title: 不是等比縮放
   act2Body: 內容要回到正確層級
   profileLandscape: 16:9
@@ -28,6 +32,10 @@ copy:
   profileSquare: 1:1
   act3Title: 先要求它證明
   act3Body: Create  →  Inspect  →  Render A / B
+  act3Create: Create
+  act3Inspect: Inspect
+  act3RenderA: Render A
+  act3RenderB: Render B
   act3Hash: SHA-256  ✓  MATCH
   act3Blocked: unsafe branch   ×   blocked
   act4Title: Skill 會循環改善
@@ -59,34 +67,42 @@ composition:
   version: 1
   checkpoints:
     - frame: 72
-      reading_order: [title, body, code]
+      reading_order: [title, body, code, copy, timing, assets, layout]
       blocks:
-        - {id: title, slot: act1Title, role: anchor, bounds: [0.0889, 0.27, 0.82, 0.1], align: left, max_lines: 1, min_font_size: 72}
-        - {id: body, slot: act1Body, role: support, bounds: [0.0889, 0.38, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 40}
-        - {id: code, slot: act1Code, role: support, bounds: [0.1389, 0.53, 0.72, 0.055], align: left, max_lines: 1, min_font_size: 24, card_layer: act1-code-card, padding: 30}
+        - {id: title, slot: act1Title, role: anchor, bounds: [0.073, 0.18, 0.5, 0.1], align: left, max_lines: 1, min_font_size: 68}
+        - {id: body, slot: act1Body, role: support, bounds: [0.073, 0.31, 0.58, 0.07], align: left, max_lines: 1, min_font_size: 34}
+        - {id: code, slot: act1Code, role: support, bounds: [0.14, 0.55, 0.72, 0.06], align: left, max_lines: 1, min_font_size: 26, card_layer: act1-code-card, padding: 30}
+        - {id: copy, slot: act1Copy, role: active, bounds: [0.13, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1CopyCard, padding: 18, equal_size_group: inputs}
+        - {id: timing, slot: act1Timing, role: active, bounds: [0.35, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1TimingCard, padding: 18, equal_size_group: inputs}
+        - {id: assets, slot: act1Assets, role: active, bounds: [0.57, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1AssetsCard, padding: 18, equal_size_group: inputs}
+        - {id: layout, slot: act1Layout, role: active, bounds: [0.79, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1LayoutCard, padding: 18, equal_size_group: inputs}
     - frame: 168
       reading_order: [title, body, landscape, portrait, square]
       blocks:
-        - {id: title, slot: act2Title, role: anchor, bounds: [0.0889, 0.19, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 60}
-        - {id: body, slot: act2Body, role: support, bounds: [0.0889, 0.28, 0.82, 0.06], align: left, max_lines: 1, min_font_size: 34}
-        - {id: landscape, slot: profileLandscape, role: active, bounds: [0.1778, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
-        - {id: portrait, slot: profilePortrait, role: active, bounds: [0.4556, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
-        - {id: square, slot: profileSquare, role: active, bounds: [0.7194, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
+        - {id: title, slot: act2Title, role: anchor, bounds: [0.073, 0.14, 0.5, 0.09], align: left, max_lines: 1, min_font_size: 58}
+        - {id: body, slot: act2Body, role: support, bounds: [0.073, 0.25, 0.55, 0.06], align: left, max_lines: 1, min_font_size: 32}
+        - {id: landscape, slot: profileLandscape, role: active, bounds: [0.18, 0.80, 0.09, 0.055], align: center, max_lines: 1, min_font_size: 28}
+        - {id: portrait, slot: profilePortrait, role: active, bounds: [0.455, 0.80, 0.09, 0.055], align: center, max_lines: 1, min_font_size: 28}
+        - {id: square, slot: profileSquare, role: active, bounds: [0.73, 0.80, 0.09, 0.055], align: center, max_lines: 1, min_font_size: 28}
     - frame: 264
-      reading_order: [title, pipeline, hash, blocked]
+      reading_order: [title, pipeline, create, inspect, render_a, render_b, hash, blocked]
       blocks:
-        - {id: title, slot: act3Title, role: anchor, bounds: [0.0889, 0.17, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 60}
-        - {id: pipeline, slot: act3Body, role: support, bounds: [0.0889, 0.27, 0.82, 0.06], align: left, max_lines: 1, min_font_size: 34}
-        - {id: hash, slot: act3Hash, role: active, bounds: [0.2361, 0.55, 0.58, 0.06], align: center, max_lines: 1, min_font_size: 42}
-        - {id: blocked, slot: act3Blocked, role: support, bounds: [0.1944, 0.72, 0.62, 0.05], align: center, max_lines: 1, min_font_size: 30, card_layer: blocked-card, padding: 25}
+        - {id: title, slot: act3Title, role: anchor, bounds: [0.073, 0.12, 0.5, 0.09], align: left, max_lines: 1, min_font_size: 58}
+        - {id: pipeline, slot: act3Body, role: support, bounds: [0.073, 0.24, 0.62, 0.06], align: left, max_lines: 1, min_font_size: 32}
+        - {id: create, slot: act3Create, role: active, bounds: [0.12, 0.46, 0.085, 0.05], align: center, max_lines: 1, min_font_size: 24, card_layer: act3CreateCard, padding: 18, equal_size_group: pipeline}
+        - {id: inspect, slot: act3Inspect, role: active, bounds: [0.345, 0.46, 0.085, 0.05], align: center, max_lines: 1, min_font_size: 24, card_layer: act3InspectCard, padding: 18, equal_size_group: pipeline}
+        - {id: render_a, slot: act3RenderA, role: active, bounds: [0.57, 0.46, 0.095, 0.05], align: center, max_lines: 1, min_font_size: 24, card_layer: act3RenderACard, padding: 18, equal_size_group: pipeline}
+        - {id: render_b, slot: act3RenderB, role: active, bounds: [0.795, 0.46, 0.095, 0.05], align: center, max_lines: 1, min_font_size: 24, card_layer: act3RenderBCard, padding: 18, equal_size_group: pipeline}
+        - {id: hash, slot: act3Hash, role: active, bounds: [0.36, 0.64, 0.28, 0.07], align: center, max_lines: 1, min_font_size: 40}
+        - {id: blocked, slot: act3Blocked, role: support, bounds: [0.37, 0.81, 0.26, 0.06], align: center, max_lines: 1, min_font_size: 28, card_layer: blocked-card, padding: 25}
     - frame: 360
       reading_order: [title, body, create, revise, diagnose, verify, cta, brand]
       blocks:
-        - {id: title, slot: act4Title, role: anchor, bounds: [0.0889, 0.14, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 58}
-        - {id: body, slot: act4Body, role: support, bounds: [0.0889, 0.23, 0.82, 0.05], align: left, max_lines: 1, min_font_size: 30}
-        - {id: create, slot: act4Create, role: active, bounds: [0.2667, 0.41, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 28}
-        - {id: revise, slot: act4Revise, role: active, bounds: [0.5398, 0.41, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 28}
-        - {id: diagnose, slot: act4Diagnose, role: active, bounds: [0.2537, 0.565, 0.17, 0.04], align: center, max_lines: 1, min_font_size: 26}
-        - {id: verify, slot: act4Verify, role: active, bounds: [0.5444, 0.565, 0.14, 0.04], align: center, max_lines: 1, min_font_size: 28}
-        - {id: cta, slot: act4Cta, role: support, bounds: [0.1556, 0.765, 0.68, 0.06], align: center, max_lines: 1, min_font_size: 34, card_layer: cta-card, padding: 30}
-        - {id: brand, slot: brand, role: support, bounds: [0.0889, 0.9, 0.5, 0.035], align: left, max_lines: 1, min_font_size: 24}
+        - {id: title, slot: act4Title, role: anchor, bounds: [0.073, 0.08, 0.45, 0.09], align: left, max_lines: 1, min_font_size: 54}
+        - {id: body, slot: act4Body, role: support, bounds: [0.073, 0.18, 0.48, 0.06], align: left, max_lines: 1, min_font_size: 28}
+        - {id: create, slot: act4Create, role: active, bounds: [0.22, 0.45, 0.08, 0.05], align: center, max_lines: 1, min_font_size: 24}
+        - {id: revise, slot: act4Revise, role: active, bounds: [0.365, 0.45, 0.08, 0.05], align: center, max_lines: 1, min_font_size: 24}
+        - {id: diagnose, slot: act4Diagnose, role: active, bounds: [0.21, 0.71, 0.1, 0.05], align: center, max_lines: 1, min_font_size: 23}
+        - {id: verify, slot: act4Verify, role: active, bounds: [0.365, 0.71, 0.08, 0.05], align: center, max_lines: 1, min_font_size: 24}
+        - {id: cta, slot: act4Cta, role: support, bounds: [0.58, 0.49, 0.31, 0.07], align: center, max_lines: 1, min_font_size: 32, card_layer: cta-card, padding: 30}
+        - {id: brand, slot: brand, role: support, bounds: [0.535, 0.79, 0.34, 0.05], align: left, max_lines: 1, min_font_size: 24}
