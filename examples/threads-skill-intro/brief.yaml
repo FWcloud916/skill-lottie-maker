@@ -1,0 +1,92 @@
+version: 1
+id: threads-skill-intro
+profile: custom
+canvas:
+  width: 1080
+  height: 1920
+fps: 24
+duration_seconds: 16
+poster_frame: 360
+loop: false
+safe_area:
+  top: 0.05
+  right: 0.05
+  bottom: 0.05
+  left: 0.05
+motion:
+  intent: 用動態技術舞台介紹可攜、可驗證、可重組排版的 Lottie Agent Skill
+  personality: restrained
+  reduced_motion: hold the poster state
+copy:
+  act1Title: lottie-maker
+  act1Body: 不是把 JSON 動起來就好
+  act1Code: '{ "create": "portable",  "verify": "deterministic" }'
+  act2Title: 不是等比縮放
+  act2Body: 內容要回到正確層級
+  profileLandscape: 16:9
+  profilePortrait: 9:16
+  profileSquare: 1:1
+  act3Title: 先要求它證明
+  act3Body: Create  →  Inspect  →  Render A / B
+  act3Hash: SHA-256  ✓  MATCH
+  act3Blocked: unsafe branch   ×   blocked
+  act4Title: Skill 會循環改善
+  act4Body: Create · Revise · Diagnose · Verify
+  act4Create: Create
+  act4Revise: Revise
+  act4Diagnose: Diagnose
+  act4Verify: Verify
+  act4Cta: 先要求它證明，再要求它輸出
+  brand: imfw.io  ×  lottie-maker
+palette:
+  background:
+    - 0.976
+    - 0.98
+    - 0.984
+    - 1
+  foreground:
+    - 0.082
+    - 0.145
+    - 0.267
+    - 1
+fonts:
+  - name: Noto Sans CJK TC
+    family: Noto Sans CJK TC
+    style: Regular
+    path: assets/fonts/NotoSansCJKtc-Regular.otf
+assets: []
+composition:
+  version: 1
+  checkpoints:
+    - frame: 72
+      reading_order: [title, body, code]
+      blocks:
+        - {id: title, slot: act1Title, role: anchor, bounds: [0.0889, 0.27, 0.82, 0.1], align: left, max_lines: 1, min_font_size: 72}
+        - {id: body, slot: act1Body, role: support, bounds: [0.0889, 0.38, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 40}
+        - {id: code, slot: act1Code, role: support, bounds: [0.1389, 0.53, 0.72, 0.055], align: left, max_lines: 1, min_font_size: 24, card_layer: act1-code-card, padding: 30}
+    - frame: 168
+      reading_order: [title, body, landscape, portrait, square]
+      blocks:
+        - {id: title, slot: act2Title, role: anchor, bounds: [0.0889, 0.19, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 60}
+        - {id: body, slot: act2Body, role: support, bounds: [0.0889, 0.28, 0.82, 0.06], align: left, max_lines: 1, min_font_size: 34}
+        - {id: landscape, slot: profileLandscape, role: active, bounds: [0.1778, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
+        - {id: portrait, slot: profilePortrait, role: active, bounds: [0.4556, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
+        - {id: square, slot: profileSquare, role: active, bounds: [0.7194, 0.60, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 30}
+    - frame: 264
+      reading_order: [title, pipeline, hash, blocked]
+      blocks:
+        - {id: title, slot: act3Title, role: anchor, bounds: [0.0889, 0.17, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 60}
+        - {id: pipeline, slot: act3Body, role: support, bounds: [0.0889, 0.27, 0.82, 0.06], align: left, max_lines: 1, min_font_size: 34}
+        - {id: hash, slot: act3Hash, role: active, bounds: [0.2361, 0.55, 0.58, 0.06], align: center, max_lines: 1, min_font_size: 42}
+        - {id: blocked, slot: act3Blocked, role: support, bounds: [0.1944, 0.72, 0.62, 0.05], align: center, max_lines: 1, min_font_size: 30, card_layer: blocked-card, padding: 25}
+    - frame: 360
+      reading_order: [title, body, create, revise, diagnose, verify, cta, brand]
+      blocks:
+        - {id: title, slot: act4Title, role: anchor, bounds: [0.0889, 0.14, 0.82, 0.08], align: left, max_lines: 1, min_font_size: 58}
+        - {id: body, slot: act4Body, role: support, bounds: [0.0889, 0.23, 0.82, 0.05], align: left, max_lines: 1, min_font_size: 30}
+        - {id: create, slot: act4Create, role: active, bounds: [0.2667, 0.41, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 28}
+        - {id: revise, slot: act4Revise, role: active, bounds: [0.5398, 0.41, 0.13, 0.04], align: center, max_lines: 1, min_font_size: 28}
+        - {id: diagnose, slot: act4Diagnose, role: active, bounds: [0.2537, 0.565, 0.17, 0.04], align: center, max_lines: 1, min_font_size: 26}
+        - {id: verify, slot: act4Verify, role: active, bounds: [0.5444, 0.565, 0.14, 0.04], align: center, max_lines: 1, min_font_size: 28}
+        - {id: cta, slot: act4Cta, role: support, bounds: [0.1556, 0.765, 0.68, 0.06], align: center, max_lines: 1, min_font_size: 34, card_layer: cta-card, padding: 30}
+        - {id: brand, slot: brand, role: support, bounds: [0.0889, 0.9, 0.5, 0.035], align: left, max_lines: 1, min_font_size: 24}
