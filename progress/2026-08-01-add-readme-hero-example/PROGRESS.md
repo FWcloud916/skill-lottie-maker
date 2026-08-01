@@ -1,7 +1,7 @@
 # Add the README hero example animation
 
 **Slug:** add-readme-hero-example
-**Status:** in-progress
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-01
@@ -30,7 +30,7 @@ animation and the new storyboard stage in the README.
       `!docs/media/*.gif` ignore exception
 - [x] Register the bundle in `examples/validate.mjs` and `examples/README.md`
 - [x] Add the README hero section and a reproduce-with-storyboard block
-- [ ] Pass `bash scripts/verify.sh` and record results
+- [x] Pass `bash scripts/verify.sh` and record results
 
 ## Work log
 
@@ -44,10 +44,13 @@ animation and the new storyboard stage in the README.
 - `verify` reported deterministic hashes across two renders; the contact sheet shows the intended
   entrance, stagger, and final-hold phases.
 
+- `bash scripts/verify.sh` passed with the new bundle included in the example gate: manifest sync,
+  eval validation, four double-rendered hash-compared examples, 14 node tests, ESLint, Prettier,
+  and the decoupling grep.
+
 ## Outcome
 
-> Fill in after development finishes.
+**Final status:** done — example bundle, committed media, and README sections verified.
+**PR / Commit:** `4ef4afd`
+**Follow-ups:** none
 
-**Final status:**
-**PR / Commit:**
-**Follow-ups:**
