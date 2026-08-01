@@ -26,9 +26,12 @@ editing. Never use a remote URL, data URL, symlink, or path outside the bundle.
    supports it, and always retain the matching fallback.
 5. Run `validate`. Fix copy binding, safe-area, overlap, reading-order, text-fit, card-padding, and
    equal-size errors without switching profile or renderer.
-6. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
-7. Revise, regenerate previews, and run `verify` until deterministic.
-8. Generate full frames or MP4/GIF only when the user requests them.
+6. Run `storyboard`; review each checkpoint still against the storyboard tier of
+   [qa.md](qa.md) — semantic roles, hierarchy, alignment, text fit, peer sizing, and connector
+   endpoints. Fix composition findings here, before any full render.
+7. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
+8. Revise, regenerate previews, and run `verify` until deterministic.
+9. Generate full frames or MP4/GIF only when the user requests them.
 
 ## Editing imported files
 
@@ -50,9 +53,11 @@ list removed/replaced features, and require the same gates as a new animation.
 
 ## Rendering and handoff
 
-The default renderer samples frames, writes `poster.png`, `contact-sheet.png`, and `report.json`,
-and does not retain a full sequence. `verify` renders twice and compares frame SHA-256 values.
-Treat renderer success as necessary but not sufficient: the agent must inspect visual output.
+`storyboard` renders only the declared checkpoint frames and writes a labeled `storyboard.png`
+plus `storyboard-report.json`; it exists to judge composition before a full render. The default
+renderer samples frames, writes `poster.png`, `contact-sheet.png`, and `report.json`, and does not
+retain a full sequence. `verify` renders twice and compares frame SHA-256 values. Treat renderer
+success as necessary but not sufficient: the agent must inspect visual output.
 
 Handoff paths relative to the bundle whenever possible. State skipped checks exactly; for example,
 `MP4 skipped: not requested` or `full-sequence render skipped: sampled verification only`.

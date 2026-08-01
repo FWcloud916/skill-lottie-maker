@@ -24,7 +24,7 @@ import {
 } from "./lib/lottie.mjs";
 import { PROFILES, resolveProfile } from "./lib/profiles.mjs";
 import { ffmpegArgs } from "./lib/media.mjs";
-import { renderSamples } from "./lib/render.mjs";
+import { renderSamples, renderStoryboard } from "./lib/render.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -36,6 +36,7 @@ function usage() {
   lottie-maker.mjs compare <before> <after> [--json]
   lottie-maker.mjs inspect <bundle|animation.json> [--json]
   lottie-maker.mjs validate <bundle|animation.json> [--json]
+  lottie-maker.mjs storyboard <bundle|animation.json> --out <dir>
   lottie-maker.mjs render <bundle|animation.json> --out <dir> [--all-frames] [--allow-large-render] [--mp4|--gif]
   lottie-maker.mjs verify <bundle|animation.json> --out <dir> [--full] [--allow-large-render]
 
@@ -330,6 +331,19 @@ async function inspect(options, validate) {
   if (validate && report.status !== "valid") process.exitCode = 1;
 }
 
+async function storyboard(options) {
+  const input = options._[0];
+  if (!input) throw new Error("input path is required");
+  const output = path.resolve(required(options, "out"));
+  const bundle = await loadBundle(input);
+  const validation = await validateBundle(bundle);
+  if (validation.status !== "valid")
+    throw new Error(`validation failed: ${validation.errors.join("; ")}`);
+  const report = await renderStoryboard(bundle, validation, output);
+  await writeJson(path.join(output, "storyboard-report.json"), report);
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+}
+
 async function render(options, { print = true } = {}) {
   const input = options._[0];
   if (!input) throw new Error("input path is required");
@@ -408,6 +422,7 @@ async function main() {
   else if (command === "compare") await compare(options);
   else if (command === "inspect") await inspect(options, false);
   else if (command === "validate") await inspect(options, true);
+  else if (command === "storyboard") await storyboard(options);
   else if (command === "render") await render(options);
   else if (command === "verify") await verify(options);
   else if (command === "--help") process.stdout.write(`${usage()}\n`);

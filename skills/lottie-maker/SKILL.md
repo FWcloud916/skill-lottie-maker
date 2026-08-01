@@ -54,8 +54,8 @@ node <skill-dir>/scripts/lottie-maker.mjs help
    a finished layout.
 5. Use readable holds, motion with a semantic purpose, deterministic geometry, and a meaningful
    final state. Do not introduce facts or claims absent from user sources.
-6. Validate, render, visually inspect, revise, and verify. Never silently switch renderer or
-   loosen the portable profile after a failure.
+6. Validate, storyboard, inspect the checkpoint stills, then render, visually inspect, revise, and
+   verify. Never silently switch renderer or loosen the portable profile after a failure.
 
 ## Revise
 
@@ -103,9 +103,14 @@ not download missing assets, evaluate expressions, or rewrite the file.
 
 ```bash
 node <skill-dir>/scripts/lottie-maker.mjs validate <bundle-or-json> --json
+node <skill-dir>/scripts/lottie-maker.mjs storyboard <bundle-or-json> --out <storyboard-dir>
 node <skill-dir>/scripts/lottie-maker.mjs render <bundle-or-json> --out <preview-dir>
 node <skill-dir>/scripts/lottie-maker.mjs verify <bundle-or-json> --out <verify-dir>
 ```
+
+`storyboard` renders only the declared checkpoint frames and writes a labeled `storyboard.png`;
+review it against the storyboard tier of [references/qa.md](references/qa.md) before the first full
+render.
 
 Use `--all-frames` only for a complete sequence. Add `--mp4` or `--gif` only when the user requests
 that preview and local `ffmpeg` exists. For a render estimated above 4 GiB raw, show the estimate
@@ -120,6 +125,8 @@ revision hash, and reviewed path-level diff.
 Completion requires:
 
 - `validate` passes for a new or normalized bundle.
+- The storyboard checkpoint stills were inspected before the first full render of a new or
+  composition-changing bundle.
 - Poster and contact sheet were inspected for copy, font shaping, clipping, safe area, layer order,
   reading order, hierarchy, alignment, spacing, card consistency, pacing, transient states, final
   state, and reduced-motion meaning.

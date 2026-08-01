@@ -18,6 +18,7 @@ defects were visible or semantic. Each layer proves one narrow thing, and no lay
 |---|---|---|
 | Brief and bundle contract | Copy, timing, font, palette, assets, and allowed features agree | Visual meaning |
 | Composition checkpoints | Hierarchy, reading order, safe bounds, fit, padding, and peer sizing | Connector topology or the value of decoration |
+| Storyboard render | Declared stable states are visually reviewable before any full render | Pacing, transitions, and loop seams |
 | CanvasKit render | The pinned Skottie runtime accepts and renders the bundle | Compatibility with any other player |
 | Double render and hashes | The output is reproducible | That reproducible pixels are correct |
 | Poster and contact sheet | Stable states and sampled transitions are reviewable | Every transient frame or loop boundary |

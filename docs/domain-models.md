@@ -1,6 +1,6 @@
 # Domain models
 
-> **Last updated:** 2026-07-31
+> **Last updated:** 2026-08-01
 
 ## Bundle
 
@@ -46,4 +46,6 @@ that validator.
 
 A render report records CanvasKit version, canvas, FPS, frame count, sampled frames, poster frame,
 per-frame hashes, poster hash, and Skottie warnings. Any Skottie error aborts rendering. A verify
-report is valid only when two independently rendered ordered hash sets match.
+report is valid only when two independently rendered ordered hash sets match. A storyboard report
+records the same renderer fields plus the declared checkpoint frames and the labeled storyboard
+sheet hash; the per-frame hashes always describe the unlabeled frame images.
