@@ -1,7 +1,7 @@
 # Add a storyboard preview stage
 
 **Slug:** add-storyboard-preview
-**Status:** in-progress
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-01
@@ -35,7 +35,7 @@ render.
       `SKILL.md` (create sequence, preview commands, completion contract)
 - [x] Update `docs/lottie-production-guide.md` verification-layer table and
       `docs/domain-models.md` render-report model
-- [ ] Pass `bash scripts/verify.sh` and record results
+- [x] Pass `bash scripts/verify.sh` and record results
 
 ## Work log
 
@@ -47,10 +47,13 @@ render.
 - Split the visual QA checklist into a storyboard (composition) tier and a motion (render) tier so
   the new stage has explicit criteria.
 
+- `bash scripts/verify.sh` passed: manifest sync, eval and example validation, 14 node tests
+  (including the new storyboard determinism test), ESLint, Prettier, and the decoupling grep.
+
 ## Outcome
 
-> Fill in after development finishes.
+**Final status:** done — storyboard subcommand, split QA tiers, and docs verified.
+**PR / Commit:** `351a206`
+**Follow-ups:** none
 
-**Final status:**
-**PR / Commit:**
-**Follow-ups:**
+

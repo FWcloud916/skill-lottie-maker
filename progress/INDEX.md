@@ -9,7 +9,7 @@ workflow.
 
 | Status | Item | Folder | Scope | Ticket | Plan | Created | Notes |
 |---|---|---|---|---|---|---|---|
-| `in-progress` | Add a storyboard preview stage | `progress/2026-08-01-add-storyboard-preview/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | `storyboard` subcommand; checkpoint stills reviewed before full render |
+| `done` | Add a storyboard preview stage | `progress/2026-08-01-add-storyboard-preview/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | `storyboard` subcommand; checkpoint stills reviewed before full render |
 | `done` | Port the Lottie production experience guide | `progress/2026-08-01-port-lottie-production-guide/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | Docs only; consumer-incident lessons scoped to this repo |
 | `done` | Correct Threads connectors and gears | `progress/2026-07-31-correct-threads-connectors-and-gears/` | `skill-lottie-maker` | N/A | N/A | 2026-07-31 | Edge connectors; synchronized gear mesh; MP4 `980394d8…2be4` |
 | `done` | Revise Threads showcase for landscape | `progress/2026-07-31-revise-threads-showcase-landscape/` | `skill-lottie-maker` | N/A | N/A | 2026-07-31 | 16:9 verified; MP4 `695d1a75…3c83` |
