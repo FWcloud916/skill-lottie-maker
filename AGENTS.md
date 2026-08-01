@@ -51,4 +51,6 @@ node skills/lottie-maker/scripts/lottie-maker.mjs help
 - New files use kebab-case except ecosystem-required filenames.
 - Tests use `node:test`, temp directories, multilingual copy, and deterministic assertions.
 - Update `> **Last updated:** YYYY-MM-DD` in every modified file under `docs/`.
+- When work exposes a production failure mode that `docs/lottie-production-guide.md` does not
+  cover, distill the lesson, rule, or boundary into that guide in the same change.
 - Keep versions synchronized across npm, Codex, and Claude manifests.

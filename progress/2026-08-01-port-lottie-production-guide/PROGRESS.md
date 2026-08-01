@@ -47,6 +47,8 @@ without duplicating the operative checklists in `skills/lottie-maker/references/
 - `bash scripts/verify.sh` passed: manifest sync, eval and example validation, 13 node tests,
   ESLint, Prettier, and the decoupling grep. A manual grep confirmed the guide contains no
   consumer-project or out-of-scope tokens.
+- Follow-up in the same day: declared the guide a living document — an AGENTS.md convention now
+  requires distilling any newly exposed, uncovered failure mode into the guide in the same change.
 
 ## Outcome
 

@@ -5,7 +5,8 @@
 Lessons distilled from real production use of this toolchain: constrained bundles that passed every
 structural gate and still shipped visible or semantic defects. This guide explains why the layered
 gates exist and where they end. It is the narrative layer; the operative rules live in the skill
-references listed in section 3.
+references listed in section 3. It is also a living guide: when work exposes a failure mode it does
+not cover, distill the lesson, rule, or boundary here in the same change.
 
 ## 1. Layered verification model
 
