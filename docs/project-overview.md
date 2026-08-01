@@ -1,6 +1,6 @@
 # Project overview
 
-> **Last updated:** 2026-07-31
+> **Last updated:** 2026-08-01
 
 ## 1. Purpose and scope
 
@@ -61,7 +61,8 @@ are bounded.
 Unit tests cover profiles and limits. CLI tests cover dry-run, overwrite protection, read-only
 inspection, validation, and unsafe assets. Render tests cover multilingual shaping, animation state,
 poster/contact-sheet creation, and deterministic hashes. ESLint, Prettier, plugin validation, skill
-validation, eval validation, and a smoke render form the release gate.
+validation, eval validation, and a smoke render form the release gate. The production experience
+behind these gates is recorded in [lottie-production-guide.md](lottie-production-guide.md).
 
 ## 9. Distribution and compatibility
 

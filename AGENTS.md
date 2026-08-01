@@ -20,6 +20,7 @@ Standalone Agent Skill for creating and verifying portable Lottie JSON bundles.
 | Architecture or workflow | `docs/project-overview.md` |
 | Bundle fields and invariants | `docs/domain-models.md` |
 | JavaScript or test changes | `docs/coding-style.md` |
+| Production pitfalls and QA rationale | `docs/lottie-production-guide.md` |
 | Skill behavior | `skills/lottie-maker/SKILL.md` and the routed references |
 
 ## Commands
