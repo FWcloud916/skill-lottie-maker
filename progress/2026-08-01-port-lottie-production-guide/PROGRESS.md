@@ -1,7 +1,7 @@
 # Port the Lottie production experience guide
 
 **Slug:** port-lottie-production-guide
-**Status:** in-progress
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-01
@@ -31,7 +31,7 @@ without duplicating the operative checklists in `skills/lottie-maker/references/
 - [x] Add the `AGENTS.md` "Read before work" routing row
 - [x] Link the guide from `docs/project-overview.md` section 8 and bump its Last updated
 - [x] Register this progress item in `progress/INDEX.md`
-- [ ] Pass `bash scripts/verify.sh` and record results
+- [x] Pass `bash scripts/verify.sh` and record results
 
 ## Work log
 
@@ -44,11 +44,12 @@ without duplicating the operative checklists in `skills/lottie-maker/references/
   `references/qa.md` and `references/troubleshooting.md`, which the guide links instead of
   repeating.
 - Added the AGENTS.md routing row and the project-overview quality-strategy link.
+- `bash scripts/verify.sh` passed: manifest sync, eval and example validation, 13 node tests,
+  ESLint, Prettier, and the decoupling grep. A manual grep confirmed the guide contains no
+  consumer-project or out-of-scope tokens.
 
 ## Outcome
 
-> Fill in after development finishes.
-
-**Final status:**
-**PR / Commit:**
-**Follow-ups:**
+**Final status:** done — guide added, routed, and verified; no runtime change.
+**PR / Commit:** `4694d04`
+**Follow-ups:** none
