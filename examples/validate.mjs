@@ -14,6 +14,7 @@ const CLI = path.join(
 );
 const EXAMPLES = path.join(ROOT, "examples");
 const validExamples = [
+  "hello-lottie-maker",
   "skill-improvement-gear-loop",
   "profile-portability",
   "deterministic-verification",

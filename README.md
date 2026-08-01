@@ -5,6 +5,12 @@ validating, and deterministically previewing Lottie JSON animation bundles. It g
 motion-design workflow into reusable profiles and a custom canvas mode without tying the skill to
 one publishing pipeline, aspect ratio, language, or product.
 
+![hello-lottie-maker example animation](docs/media/hello-lottie-maker.gif)
+
+The animation above is [`examples/hello-lottie-maker`](examples/hello-lottie-maker/): a validated
+bundle authored, storyboard-reviewed, rendered, and hash-verified entirely by this skill. The GIF
+is a preview; the canonical artifact is its `animation.json`.
+
 The canonical output is always `animation.json`. Each created bundle also keeps its editable brief,
 motion rationale, local assets, deterministic preview report, poster, and contact sheet.
 
@@ -70,10 +76,23 @@ requires `--width`, `--height`, `--fps`, and `--duration`.
 
 ## Reproducible examples
 
-The [`examples`](examples/) directory contains three validated bundles: a multilingual gear loop,
-a four-profile canvas comparison, and a deterministic inspection/rendering gate. It also includes
-one intentionally invalid remote-asset fixture for read-only diagnosis. Every valid example is
-rendered twice and hash-compared by the repository verification gate.
+The [`examples`](examples/) directory contains four validated bundles: the README hero above, a
+multilingual gear loop, a four-profile canvas comparison, and a deterministic inspection/rendering
+gate. It also includes one intentionally invalid remote-asset fixture for read-only diagnosis.
+Every valid example is rendered twice and hash-compared by the repository verification gate.
+
+Reproduce the hero end to end, including its storyboard preview stage:
+
+```bash
+node skills/lottie-maker/scripts/lottie-maker.mjs validate examples/hello-lottie-maker --json
+node skills/lottie-maker/scripts/lottie-maker.mjs storyboard examples/hello-lottie-maker --out /tmp/hello-storyboard
+node skills/lottie-maker/scripts/lottie-maker.mjs verify examples/hello-lottie-maker --out /tmp/hello-verify
+```
+
+The storyboard renders exactly the declared composition checkpoints for review before any full
+render:
+
+![hello-lottie-maker storyboard](docs/media/hello-lottie-maker-storyboard.png)
 
 To revise the only copy of an imported animation safely, clone it byte-for-byte and audit the
 path-level diff after editing:

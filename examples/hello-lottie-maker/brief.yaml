@@ -1,0 +1,58 @@
+version: 1
+id: hello-lottie-maker
+profile: custom
+canvas:
+  width: 960
+  height: 540
+fps: 24
+duration_seconds: 4
+poster_frame: 84
+loop: false
+safe_area:
+  top: 0.05
+  right: 0.05
+  bottom: 0.05
+  left: 0.05
+motion:
+  intent: 用一個克制的四秒開場介紹 lottie-maker 的三步驟工作流
+  personality: restrained
+  reduced_motion: hold the poster state
+copy:
+  title: lottie-maker
+  subtitle: 可攜、可驗證、可重現的 Lottie JSON
+  stepCreate: Create 建立
+  stepValidate: Validate 驗證
+  stepRender: Render 渲染
+palette:
+  background:
+    - 0.976
+    - 0.98
+    - 0.984
+    - 1
+  foreground:
+    - 0.082
+    - 0.145
+    - 0.267
+    - 1
+fonts:
+  - name: Noto Sans CJK TC
+    family: Noto Sans CJK TC
+    style: Regular
+    path: assets/fonts/NotoSansCJKtc-Regular.otf
+assets: []
+composition:
+  version: 1
+  checkpoints:
+    - frame: 24
+      reading_order: [title, subtitle]
+      blocks:
+        - {id: title, slot: title, role: anchor, bounds: [0.073, 0.2, 0.42, 0.15], align: left, max_lines: 1, min_font_size: 48}
+        - {id: subtitle, slot: subtitle, role: support, bounds: [0.073, 0.38, 0.56, 0.1], align: left, max_lines: 1, min_font_size: 24}
+    - frame: 84
+      reading_order: [title, subtitle, create, validate, render]
+      blocks:
+        - {id: title, slot: title, role: anchor, bounds: [0.073, 0.2, 0.42, 0.15], align: left, max_lines: 1, min_font_size: 48}
+        - {id: subtitle, slot: subtitle, role: support, bounds: [0.073, 0.38, 0.56, 0.1], align: left, max_lines: 1, min_font_size: 24}
+        - {id: create, slot: stepCreate, role: active, bounds: [0.16, 0.72, 0.18, 0.06], align: center, max_lines: 1, min_font_size: 20, card_layer: stepCreateCard, padding: 12, equal_size_group: steps}
+        - {id: validate, slot: stepValidate, role: active, bounds: [0.41, 0.72, 0.18, 0.06], align: center, max_lines: 1, min_font_size: 20, card_layer: stepValidateCard, padding: 12, equal_size_group: steps}
+        - {id: render, slot: stepRender, role: active, bounds: [0.66, 0.72, 0.18, 0.06], align: center, max_lines: 1, min_font_size: 20, card_layer: stepRenderCard, padding: 12, equal_size_group: steps}
