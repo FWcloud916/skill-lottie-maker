@@ -53,5 +53,5 @@ and continue clone the failed attempt to a new destination; restart clones the u
 Cleanup remains a separate destructive action requiring exact-target user confirmation.
 
 **Final status:** review
-**PR / Commit:** Uncommitted on `main` at baseline HEAD `6c5fce9`
-**Follow-ups:** Review and commit the implementation.
+**PR / Commit:** `863992f`
+**Follow-ups:** Review and mark the item done after acceptance.
