@@ -59,5 +59,14 @@ renderer samples frames, writes `poster.png`, `contact-sheet.png`, and `report.j
 retain a full sequence. `verify` renders twice and compares frame SHA-256 values. Treat renderer
 success as necessary but not sufficient: the agent must inspect visual output.
 
+When validation, storyboard, rendering, or verification fails, retain the bundle and all completed
+previews, reports, and hash evidence at their existing paths. Report the failing gate, which outputs
+are complete or incomplete, and every available SHA-256. Do not roll back or clean up artifacts as
+part of fail-closed handling. Cleanup is a separate destructive operation that requires explicit
+user confirmation of the exact paths; a request to retry, revise, diagnose, or restart does not
+authorize cleanup or in-place replacement. Treat the failed bundle as immutable evidence. Retry or
+continue by cloning the failed bundle to a new absent kebab-case destination. Restart by cloning
+the unchanged original to another new absent destination. Preserve every attempt.
+
 Handoff paths relative to the bundle whenever possible. State skipped checks exactly; for example,
 `MP4 skipped: not requested` or `full-sequence render skipped: sampled verification only`.

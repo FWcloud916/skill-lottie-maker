@@ -1,6 +1,6 @@
 # Lottie production experience guide
 
-> **Last updated:** 2026-08-01
+> **Last updated:** 2026-08-03
 
 Lessons distilled from real production use of this toolchain: constrained bundles that passed every
 structural gate and still shipped visible or semantic defects. This guide explains why the layered
@@ -75,6 +75,17 @@ measured values and inspected frames recorded.
 A reviewed portrait showcase became an incoherent landscape one, because safe-area validation says
 nothing about suitability for another aspect ratio. Each ratio is its own composition: rebuild the
 stable states natively and review that variant's own checkpoints.
+
+### Fail closed is not cleanup
+
+A failed bundle still contains useful design decisions, diagnostics, previews, and hashes. Treating
+a validation or rendering failure as permission to delete those artifacts destroys the evidence
+needed to revise or compare the work. Fail closed only withholds completion: preserve the bundle and
+all completed outputs at their current paths, report the failed gate, and keep cleanup as a separate
+exact-target action requiring explicit user confirmation. Retrying, revising, diagnosing, or
+starting another bundle never implies cleanup or replacement. A retry clones the failed bundle into
+a new destination; a restart clones the unchanged original into a separate new destination. Both
+paths preserve the failed bundle as immutable comparison evidence.
 
 ## 3. Operative checklists
 

@@ -122,6 +122,13 @@ Return the bundle path, operation performed, validation status, preview paths, p
 sampled frames, hashes, remaining compatibility warnings, and any skipped optional checks.
 For revisions, also return the initial and final original hashes, pre-edit clone hash, post-edit
 revision hash, and reviewed path-level diff.
+If validation, storyboard, rendering, or verification fails, keep the bundle and every completed
+preview, report, and hash record at their current paths. Report the failing gate, retained paths,
+and available hashes; fail closed means the bundle is not complete, not that its evidence is
+discarded. Treat that failed bundle as immutable evidence. To retry or continue the current
+revision, clone the failed bundle to a new absent kebab-case destination. To restart, clone the
+unchanged original to a different new destination. Neither request authorizes replacing retained
+files.
 Completion requires:
 
 - `validate` passes for a new or normalized bundle.
@@ -140,4 +147,7 @@ Completion requires:
 - MUST NOT execute Lottie expressions or accept remote/data URLs as portable assets.
 - MUST NOT present MP4/GIF as the source animation; `animation.json` remains canonical.
 - MUST NOT claim arbitrary third-party Lottie files are portable when `inspect` reports violations.
+- MUST NOT delete, move, truncate, or overwrite a failed or partial bundle, preview, report, or hash
+  record as cleanup. Cleanup is a separate destructive action and requires explicit user
+  confirmation naming the exact targets.
 - MAY diagnose an invalid import without making it conformant.
