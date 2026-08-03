@@ -23,7 +23,8 @@ editing. Never use a remote URL, data URL, symlink, or path outside the bundle.
 3. Finalize `brief.yaml`; define composition checkpoints for stable holds and update `motion.md`
    before authoring JSON.
 4. Bind each `copy` entry to a same-named native text layer. Add a slot only when the target player
-   supports it, and always retain the matching fallback.
+   supports it, and always retain the matching fallback. Keep the managed `background` as the final
+   root layer.
 5. Run `validate`. Fix copy binding, safe-area, overlap, reading-order, text-fit, card-padding, and
    equal-size errors without switching profile or renderer.
 6. Run `storyboard`; review each checkpoint still against the storyboard tier of

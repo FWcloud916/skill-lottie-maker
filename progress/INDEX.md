@@ -9,6 +9,7 @@ workflow.
 
 | Status | Item | Folder | Scope | Ticket | Plan | Created | Notes |
 |---|---|---|---|---|---|---|---|
+| `done` | Validate managed background layer order | `progress/2026-08-03-validate-managed-background-order/` | `skill-lottie-maker` | N/A | N/A | 2026-08-03 | Managed bundles keep an opaque background below content without changing bare-import diagnostics |
 | `review` | Preserve failed Lottie bundle artifacts | `progress/2026-08-03-preserve-failed-bundles/` | `skill-lottie-maker` | N/A | N/A | 2026-08-03 | Fail closed retains bundle evidence; cleanup requires confirmation |
 | `done` | Add the README hero example animation | `progress/2026-08-01-add-readme-hero-example/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | `hello-lottie-maker` bundle; README GIF/storyboard media |
 | `done` | Add a storyboard preview stage | `progress/2026-08-01-add-storyboard-preview/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | `storyboard` subcommand; checkpoint stills reviewed before full render |

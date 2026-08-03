@@ -74,3 +74,9 @@ scaling a landscape composition.
 Every `copy` value is a non-empty string. Bind it to a same-named native text layer with identical
 fallback text. Slots are optional metadata; if added, retain the native fallback so players that
 ignore or reject slots still render copy.
+
+For a managed bundle, keep the root shape layer named `background` as the final entry in
+`animation.json`'s root `layers` array. Earlier root entries paint above later entries in the managed
+renderer, so a background placed first can hide an otherwise valid composition. This managed-bundle
+rule is enforced only when `brief.yaml` exists; inspecting or validating a standalone imported JSON
+does not normalize or reject its original layer order.

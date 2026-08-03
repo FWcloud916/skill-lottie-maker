@@ -551,6 +551,7 @@ export async function validateBundle(bundle) {
         if (!bound)
           report.errors.push(`copy.${slot} must match its named text layer`);
       }
+      report.errors.push(...validateManagedBackgroundOrder(bundle.animation));
       report.errors.push(
         ...validateComposition(bundle.brief, bundle.animation, profile),
       );
@@ -561,4 +562,16 @@ export async function validateBundle(bundle) {
   report.errors = [...new Set(report.errors)];
   report.status = report.errors.length ? "invalid" : "valid";
   return report;
+}
+
+export function validateManagedBackgroundOrder(animation) {
+  const layers = Array.isArray(animation?.layers) ? animation.layers : [];
+  const backgroundIndex = layers.findIndex(
+    (layer) => layer?.nm === "background",
+  );
+  if (backgroundIndex === -1 || backgroundIndex === layers.length - 1)
+    return [];
+  return [
+    `/layers/${backgroundIndex}: managed background must be the final root layer`,
+  ];
 }

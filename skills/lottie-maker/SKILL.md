@@ -50,8 +50,9 @@ node <skill-dir>/scripts/lottie-maker.mjs help
 4. Declare composition checkpoints at the poster and every stable information state. Give each
    visible block normalized bounds, a semantic role, and an explicit reading order. Text blocks
    also declare fit limits; card-backed blocks declare padding and, when applicable, an equal-size
-   group. Use one focal group per checkpoint and recompose for a new aspect ratio instead of scaling
-   a finished layout.
+   group. Keep a managed bundle's opaque `background` as the final root `layers` entry so it remains
+   below every visible layer. Use one focal group per checkpoint and recompose for a new aspect ratio
+   instead of scaling a finished layout.
 5. Use readable holds, motion with a semantic purpose, deterministic geometry, and a meaningful
    final state. Do not introduce facts or claims absent from user sources.
 6. Validate, storyboard, inspect the checkpoint stills, then render, visually inspect, revise, and

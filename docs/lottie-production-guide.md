@@ -52,6 +52,14 @@ not a text check — only inspecting the rendered hold is. The same period showe
 invariant left as prose (body limits, naming, keyframe restrictions, font metadata) will eventually
 be violated; every invariant must be executable and fail closed before render.
 
+### A valid background can still hide the scene
+
+In the managed renderer, earlier root-layer array entries paint above later ones. An opaque
+full-frame background placed first can therefore hide every text and shape layer while schema and
+render checks still succeed. Managed bundles keep `background` as the final root layer and validate
+that order before storyboard rendering. Bare imported JSON remains read-only and is not rejected or
+normalized solely for this managed convention.
+
 ### Legal shapes are not meaningful shapes
 
 Structural checks accepted hidden marks, an empty decorative card, and unlabeled boxes, because a
