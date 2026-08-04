@@ -16,6 +16,22 @@ Run `storyboard` after `validate` passes and inspect every checkpoint still:
 Fix storyboard findings before rendering; composition defects found later cost a full render per
 revision.
 
+## Geometry tier — when the brief declares `composition.geometry`
+
+Run `geometry` and inspect the report for every declared claim:
+
+- A `failed` claim's evidence — the worst frame's composite render plus each isolated layer mask —
+  shows the actual measured contact, not the nominal or intended one; look at the masks, not only
+  the numbers.
+- A `degenerate` claim means every sampled metric measured identically across the window: either
+  the sample stride aliased against the mechanism's period, or the geometry is not actually moving.
+  Read the finding's own diagnosis before treating it as a false alarm.
+- `interlocked` failing on engagement alone (tangent-only) is a different fix than failing on body
+  clearance (interpenetration) — moving parts closer fixes the first and can cause the second.
+
+Never treat a `valid` geometry status as a semantic guarantee: it proves the declared claim, not
+that the contact means anything to a viewer.
+
 ## Motion tier — after the sampled render
 
 Inspect the actual rendered poster and contact sheet after every material animation change:

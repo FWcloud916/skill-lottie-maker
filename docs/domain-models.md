@@ -1,6 +1,6 @@
 # Domain models
 
-> **Last updated:** 2026-08-01
+> **Last updated:** 2026-08-04
 
 ## Bundle
 
@@ -21,6 +21,15 @@ A composition checkpoint binds one stable timeline frame to normalized, safe-are
 blocks and an exact reading order. Blocks carry hierarchy roles and may bind named text or rectangle
 card layers. Validation checks overlap, text fit, font floor, card padding, and equal-size groups.
 The contract records intent while `animation.json` remains the source of actual geometry.
+
+## Geometry claim
+
+An optional `composition.geometry` entry declares a mechanical relation — `interlocked`,
+`disjoint`, or `contained` — between exactly two named root layers, over a contiguous sampled frame
+window, with relation-specific pixel criteria. Unlike a composition checkpoint, which checks
+*declared* bounds against the brief, a geometry claim is checked against *rendered* pixels: each
+named layer is rendered in isolation and the two resulting occupancy masks are measured directly.
+A bundle with no geometry claims is unaffected; geometry verification is a no-op for it.
 
 ## Animation
 
@@ -49,3 +58,15 @@ per-frame hashes, poster hash, and Skottie warnings. Any Skottie error aborts re
 report is valid only when two independently rendered ordered hash sets match. A storyboard report
 records the same renderer fields plus the declared checkpoint frames and the labeled storyboard
 sheet hash; the per-frame hashes always describe the unlabeled frame images.
+
+## Geometry report
+
+A geometry report is `"skipped"` when the brief declares no claims, `"dry-run"` when previewing a
+plan without rendering, or otherwise carries per-claim status, degeneracy, every frame's raw
+measurements and their summary statistics, findings, and — for a failed or degenerate claim only —
+bounded evidence (the worst frame's composite render and each isolated layer's mask). A
+`measurements_sha256` covers every claim's rounded, canonicalized measurements, playing the same
+role for geometry that the render report's frame hashes play for pixels: a value to compare across
+revisions to prove a geometry change was intentional. It is not compared automatically the way
+`verify` compares two renders — the isolated-render pipeline is already proven deterministic by the
+renderer's own verify gate, so geometry does not re-render twice.

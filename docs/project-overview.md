@@ -1,6 +1,6 @@
 # Project overview
 
-> **Last updated:** 2026-08-01
+> **Last updated:** 2026-08-04
 
 ## 1. Purpose and scope
 
@@ -38,9 +38,14 @@ skills/lottie-maker/       Canonical Agent Skill and runtime
 
 `lottie-maker.mjs` parses commands and owns output behavior. `profiles.mjs` resolves bounded canvas
 and timeline values. `lottie.mjs` creates, loads, inspects, and validates bundles;
-`composition.mjs` validates checkpoint hierarchy, bounds, reading order, text fit, and card geometry.
-`render.mjs` loads CanvasKit, records Skottie diagnostics, renders PNGs, and computes hashes.
-`io.mjs` centralizes safe path and JSON utilities.
+`composition.mjs` validates checkpoint hierarchy, bounds, reading order, text fit, card geometry,
+and declared geometry-claim structure. `emit.mjs` supplies the shared Lottie JSON construction
+primitives `createAnimation` and every example builder are built from. `text-metrics.mjs` supplies
+the text-width heuristic shared by the generator and the composition validator. `render.mjs` loads
+CanvasKit, records Skottie diagnostics, renders PNGs, and computes hashes. `geometry.mjs` renders
+each geometry claim's named layers in isolation, measures contact from the resulting pixel masks,
+and detects degenerate (aliased or static) sampling. `io.mjs` centralizes safe path and JSON
+utilities.
 
 ## 6. Data flow
 
@@ -60,9 +65,13 @@ are bounded.
 
 Unit tests cover profiles and limits. CLI tests cover dry-run, overwrite protection, read-only
 inspection, validation, and unsafe assets. Render tests cover multilingual shaping, animation state,
-poster/contact-sheet creation, and deterministic hashes. ESLint, Prettier, plugin validation, skill
-validation, eval validation, and a smoke render form the release gate. The production experience
-behind these gates is recorded in [lottie-production-guide.md](lottie-production-guide.md).
+poster/contact-sheet creation, and deterministic hashes. Geometry tests cover synthetic mask math,
+an empirical reproduction of a real historical tangent-only defect, and CLI wiring (dry-run,
+skipped-when-undeclared, matte refusal, `--frames` override, determinism). Every example builder is
+checked for drift against its committed output on every gate run. ESLint, Prettier, plugin
+validation, skill validation, eval validation, and a smoke render form the release gate. The
+production experience behind these gates is recorded in
+[lottie-production-guide.md](lottie-production-guide.md).
 
 ## 9. Distribution and compatibility
 

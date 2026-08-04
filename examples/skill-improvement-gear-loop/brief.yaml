@@ -17,6 +17,44 @@ motion:
   intent: 用互相咬合並無縫循環的齒輪表達 skill 透過觀察、改善、驗證與重複而持續進化
   personality: restrained
   reduced_motion: hold the poster state
+composition:
+  version: 1
+  checkpoints:
+    - frame: 90
+      reading_order: [title, cycle]
+      blocks:
+        - id: title
+          slot: title
+          role: anchor
+          bounds: [0.06, 0.06, 0.55, 0.12]
+          align: left
+          max_lines: 1
+          min_font_size: 24
+        - id: cycle
+          slot: cycle
+          role: support
+          bounds: [0.1, 0.85, 0.83, 0.09]
+          align: left
+          max_lines: 1
+          min_font_size: 18
+  geometry:
+    - id: main-upper-mesh
+      relation: interlocked
+      layers: [gear-main, gear-upper]
+      frames: { start: 0, count: 24 }
+      criteria: { min_engagement_px: 8 }
+      note: gear-main drives gear-upper; teeth must engage without the hubs touching
+    - id: main-lower-mesh
+      relation: interlocked
+      layers: [gear-main, gear-lower]
+      frames: { start: 0, count: 24 }
+      criteria: { min_engagement_px: 8 }
+      note: gear-main drives gear-lower; teeth must engage without the hubs touching
+    - id: upper-lower-disjoint
+      relation: disjoint
+      layers: [gear-upper, gear-lower]
+      frames: { start: 0, count: 24 }
+      note: the two driven gears sit on opposite sides of the hub and never touch each other
 copy:
   title: Skill 循環改善
   cycle: Observe → Refine → Verify → Repeat

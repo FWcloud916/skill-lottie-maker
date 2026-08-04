@@ -6,7 +6,9 @@ import YAML from "yaml";
 
 import { validateComposition } from "./composition.mjs";
 import { LIMITS, resolveProfile } from "./profiles.mjs";
-import { readJson, safeLocalFile, sha256 } from "./io.mjs";
+import { pointerToken, readJson, safeLocalFile, sha256 } from "./io.mjs";
+import { estimateTextUnits } from "./text-metrics.mjs";
+import { backgroundLayer, entranceOpacity, textLayer } from "./emit.mjs";
 
 const ROOT_FIELDS = ["v", "fr", "ip", "op", "w", "h", "nm", "assets", "layers"];
 const DISALLOWED_LAYER_TYPES = new Map([
@@ -16,6 +18,12 @@ const DISALLOWED_LAYER_TYPES = new Map([
 ]);
 const ALLOWED_LAYER_TYPES = new Set([0, 2, 4, 5]);
 const EFFECT_KEYS = new Set(["ef", "ddd", "ao"]);
+// Measured against the pinned CanvasKit/Skottie build (render.mjs CANVASKIT_VERSION): "\n"
+// is not honored as a line break and renders as a substitute glyph on a single line; "\r"
+// happens to break the line in this build but that behavior is undocumented and not proven
+// to match other Lottie players (lottie-web, native SDKs). No line-separator character is
+// portable, so text documents must not contain one.
+export const LINE_SEPARATOR_PATTERN = /[\r\n]/u;
 let schemaValidator;
 
 async function officialSchemaReport(animation) {
@@ -91,10 +99,6 @@ function layerInventory(animation) {
   return found;
 }
 
-function pointerToken(value) {
-  return String(value).replaceAll("~", "~0").replaceAll("/", "~1");
-}
-
 function walk(value, visitor, pointer = "") {
   visitor(value, pointer);
   if (Array.isArray(value))
@@ -103,14 +107,6 @@ function walk(value, visitor, pointer = "") {
     for (const [childKey, child] of Object.entries(value))
       walk(child, visitor, `${pointer}/${pointerToken(childKey)}`);
   }
-}
-
-function estimateTextUnits(text) {
-  return [...text].reduce((total, character) => {
-    if (/\s/u.test(character)) return total + 0.35;
-    if (/^[\u0020-\u007e]$/u.test(character)) return total + 0.58;
-    return total + 1;
-  }, 0);
 }
 
 export function createAnimation(brief, profile) {
@@ -156,88 +152,18 @@ export function createAnimation(brief, profile) {
       ],
     },
     layers: [
-      {
-        ty: 5,
-        nm: "title",
-        ip: 0,
-        op: profile.frameCount,
-        st: 0,
-        ks: {
-          o: {
-            a: 1,
-            k: [
-              {
-                t: 0,
-                s: [0],
-                e: [100],
-                i: { x: [0.667], y: [1] },
-                o: { x: [0.333], y: [0] },
-              },
-              { t: holdStart, s: [100] },
-            ],
-          },
-          r: { a: 0, k: 0 },
-          p: { a: 0, k: [profile.width * 0.08, profile.height / 2, 0] },
-          a: { a: 0, k: [0, 0, 0] },
-          s: { a: 0, k: [100, 100, 100] },
-        },
-        t: {
-          a: [],
-          p: {},
-          d: {
-            k: [
-              {
-                t: 0,
-                s: {
-                  t: title,
-                  f: font,
-                  s: Math.floor(titleSize),
-                  j: 0,
-                  tr: 0,
-                  lh: Math.round(profile.width * 0.075),
-                  fc: foreground.slice(0, 3),
-                },
-              },
-            ],
-          },
-        },
-      },
-      {
-        ty: 4,
-        nm: "background",
-        ip: 0,
-        op: profile.frameCount,
-        st: 0,
-        ks: {
-          o: { a: 0, k: 100 },
-          r: { a: 0, k: 0 },
-          p: { a: 0, k: [profile.width / 2, profile.height / 2, 0] },
-          a: { a: 0, k: [0, 0, 0] },
-          s: { a: 0, k: [100, 100, 100] },
-        },
-        shapes: [
-          {
-            ty: "gr",
-            it: [
-              {
-                ty: "rc",
-                p: { a: 0, k: [0, 0] },
-                s: { a: 0, k: [profile.width, profile.height] },
-                r: { a: 0, k: 0 },
-              },
-              { ty: "fl", c: { a: 0, k: background }, o: { a: 0, k: 100 } },
-              {
-                ty: "tr",
-                p: { a: 0, k: [0, 0] },
-                a: { a: 0, k: [0, 0] },
-                s: { a: 0, k: [100, 100] },
-                r: { a: 0, k: 0 },
-                o: { a: 0, k: 100 },
-              },
-            ],
-          },
-        ],
-      },
+      textLayer("title", title, [profile.width * 0.08, profile.height / 2], {
+        size: Math.floor(titleSize),
+        font,
+        lineHeight: Math.round(profile.width * 0.075),
+        color: foreground,
+        outPoint: profile.frameCount,
+        opacity: entranceOpacity(0, { eased: true, fadeInFrames: holdStart }),
+      }),
+      backgroundLayer([profile.width, profile.height], {
+        fill: background,
+        outPoint: profile.frameCount,
+      }),
     ],
   };
 }
@@ -303,6 +229,7 @@ export async function inspectAnimation(bundle) {
 
   const layers = collectAnimationLayers(animation);
   const layerDetails = layerInventory(animation);
+  const lineSeparatorPaths = [];
   for (const [index, layer] of layers.entries()) {
     const layerPath = layerDetails[index]?.path ?? "/layers";
     if (!ALLOWED_LAYER_TYPES.has(layer.ty))
@@ -321,6 +248,18 @@ export async function inspectAnimation(bundle) {
       errors.push(
         `${layerPath}/t: text layer ${layer.nm ?? "unnamed"} must contain t.a and t.p`,
       );
+    }
+    if (layer.ty === 5) {
+      for (const [keyIndex, keyframe] of (layer.t?.d?.k ?? []).entries()) {
+        const text = keyframe?.s?.t;
+        if (typeof text === "string" && LINE_SEPARATOR_PATTERN.test(text)) {
+          const pointer = `${layerPath}/t/d/k/${keyIndex}/s/t`;
+          lineSeparatorPaths.push(pointer);
+          warnings.push(
+            `${pointer}: line separators are not portable; measured Skottie behavior renders them inline or as a substitute glyph rather than a clean break. Use one text layer per line.`,
+          );
+        }
+      }
     }
   }
   const expressionPaths = [];
@@ -497,6 +436,7 @@ export async function inspectAnimation(bundle) {
         .map((layer) => `${layer.path}/t/a`),
       expressions: expressionPaths,
       remote_urls: remoteUrlPaths,
+      line_separators: lineSeparatorPaths,
       embedded_glyphs: Array.isArray(animation.chars)
         ? animation.chars.length
         : 0,
@@ -517,32 +457,21 @@ export async function inspectAnimation(bundle) {
 export async function validateBundle(bundle) {
   const report = await inspectAnimation(bundle);
   if (bundle.brief) {
-    let profile;
+    const animation = bundle.animation;
+
+    // Checks that do not depend on profile resolution run unconditionally, in their own
+    // try/catch, so a bad canvas/fps/duration in the brief cannot hide them (see the
+    // profile-resolution group below). A single throw here previously discarded every
+    // finding after it; each group now fails independently.
     try {
       if (bundle.brief.version !== 1)
-        throw new Error("brief version must be 1");
+        report.errors.push("brief version must be 1");
       if (typeof bundle.brief.id !== "string")
-        throw new Error("brief id is required");
-      profile = resolveProfile(bundle.brief);
-      const animation = bundle.animation;
-      if (animation.w !== profile.width || animation.h !== profile.height)
-        report.errors.push("animation canvas does not match brief");
-      if (
-        animation.fr !== profile.fps ||
-        animation.op - animation.ip !== profile.frameCount
-      )
-        report.errors.push("animation timeline does not match brief");
-      const poster = bundle.brief.poster_frame;
-      if (
-        !Number.isInteger(poster) ||
-        poster < 0 ||
-        poster >= profile.frameCount
-      )
-        report.errors.push("poster_frame must point inside the timeline");
+        report.errors.push("brief id is required");
       for (const [slot, copy] of Object.entries(bundle.brief.copy ?? {})) {
         if (typeof copy !== "string" || !copy.trim())
           report.errors.push(`copy.${slot} must be a non-empty string`);
-        const bound = collectAnimationLayers(bundle.animation).some(
+        const bound = collectAnimationLayers(animation).some(
           (layer) =>
             layer.ty === 5 &&
             layer.nm === slot &&
@@ -551,17 +480,124 @@ export async function validateBundle(bundle) {
         if (!bound)
           report.errors.push(`copy.${slot} must match its named text layer`);
       }
-      report.errors.push(...validateManagedBackgroundOrder(bundle.animation));
-      report.errors.push(
-        ...validateComposition(bundle.brief, bundle.animation, profile),
-      );
+      report.errors.push(...validateManagedBackgroundOrder(animation));
+      report.errors.push(...validateSlots(animation, bundle.brief));
+      for (const pointer of report.features.line_separators)
+        report.errors.push(
+          `${pointer}: line separators are not portable in a managed bundle; use one text layer per line instead of \\n or \\r`,
+        );
     } catch (error) {
       report.errors.push(error.message);
+    }
+
+    let profile = null;
+    try {
+      profile = resolveProfile(bundle.brief);
+    } catch (error) {
+      report.errors.push(error.message);
+    }
+
+    if (profile) {
+      try {
+        if (animation.w !== profile.width || animation.h !== profile.height)
+          report.errors.push("animation canvas does not match brief");
+        if (
+          animation.fr !== profile.fps ||
+          animation.op - animation.ip !== profile.frameCount
+        )
+          report.errors.push("animation timeline does not match brief");
+        const poster = bundle.brief.poster_frame;
+        if (
+          !Number.isInteger(poster) ||
+          poster < 0 ||
+          poster >= profile.frameCount
+        )
+          report.errors.push("poster_frame must point inside the timeline");
+        report.errors.push(
+          ...validateComposition(bundle.brief, animation, profile),
+        );
+      } catch (error) {
+        report.errors.push(error.message);
+      }
+    } else {
+      report.errors.push(
+        "profile-dependent checks were skipped; re-run validate after fixing the profile",
+      );
     }
   }
   report.errors = [...new Set(report.errors)];
   report.status = report.errors.length ? "invalid" : "valid";
   return report;
+}
+
+const SLOT_STYLE_KEYS = ["f", "s", "j", "tr", "lh", "fc"];
+
+function collectSids(animation) {
+  const sids = new Set();
+  walk(animation, (value) => {
+    if (value && typeof value === "object" && typeof value.sid === "string")
+      sids.add(value.sid);
+  });
+  return sids;
+}
+
+// Standard Lottie binds a slot through a `sid` on the target property. This skill's own
+// examples bind by layer name instead, and no `sid` ever appears in this repo — so a slot
+// that names neither is inert metadata that can silently drift from what actually renders.
+function resolveSlotValue(slotValue) {
+  if (!slotValue || typeof slotValue !== "object") return null;
+  if (typeof slotValue.t === "string")
+    return { text: slotValue.t, document: slotValue };
+  if (typeof slotValue.p?.k === "string")
+    return { text: slotValue.p.k, document: null };
+  return null;
+}
+
+export function validateSlots(animation, brief) {
+  const errors = [];
+  const slots = animation?.slots;
+  if (slots == null) return errors;
+  if (typeof slots !== "object" || Array.isArray(slots))
+    return ["/slots: must be a mapping"];
+  const sids = collectSids(animation);
+  const layers = collectAnimationLayers(animation);
+  for (const [key, slotValue] of Object.entries(slots)) {
+    const pointer = `/slots/${pointerToken(key)}`;
+    const layer = layers.find(
+      (candidate) => candidate.ty === 5 && candidate.nm === key,
+    );
+    if (!sids.has(key) && !layer) {
+      errors.push(`${pointer}: not bound to any sid or layer name`);
+      continue;
+    }
+    const resolved = resolveSlotValue(slotValue);
+    if (!resolved) {
+      errors.push(
+        `${pointer}: must be a string property ({p:{k:string}}) or a text document`,
+      );
+      continue;
+    }
+    if (layer) {
+      const fallback = layer.t?.d?.k?.[0]?.s ?? null;
+      if (fallback && fallback.t !== resolved.text)
+        errors.push(`${pointer}: does not match its layer fallback verbatim`);
+      if (resolved.document && fallback) {
+        const missing = SLOT_STYLE_KEYS.filter(
+          (styleKey) =>
+            fallback[styleKey] !== undefined &&
+            resolved.document[styleKey] === undefined,
+        );
+        if (missing.length)
+          errors.push(
+            `${pointer}: text document is missing style fields present on its layer fallback: ${missing.join(", ")}`,
+          );
+      }
+    }
+    const copy = brief?.copy?.[key];
+    if (typeof copy === "string" && copy !== resolved.text)
+      errors.push(`${pointer}: does not match brief.copy.${key} verbatim`);
+  }
+  return errors;
 }
 
 export function validateManagedBackgroundOrder(animation) {

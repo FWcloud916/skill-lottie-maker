@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+export function pointerToken(value) {
+  return String(value).replaceAll("~", "~0").replaceAll("/", "~1");
+}
+
 export function assertKebab(value, label = "id") {
   if (typeof value !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
     throw new Error(`${label} must be kebab-case`);

@@ -13,6 +13,13 @@ Choose motion after deciding what the viewer must understand.
 - Differentiate anchor, support, and active typography. Do not give every element the same entrance.
 - For loops, make the semantic end connect to the beginning and inspect the seam. For reduced motion,
   retain the complete information state rather than merely slowing the same movement.
+- Author a multi-line title as one text layer per line, stacked and positioned, never as a single
+  text document with an embedded `\n` or `\r`. Neither is a portable line break — see
+  `references/brief-contract.md`.
+- Budget clearance and containment for the full stroke width, not the nominal shape. A centered
+  stroke paints half its width outward from the nominal path, so two shapes drawn tangent in their
+  nominal geometry overlap once stroked; treat `nominal clearance − stroke width − antialiasing
+allowance` as the real gap, not the declared padding alone.
 
 Record timing, easing, focal group, poster choice, loop seam, reduced-motion state, and rejected
 alternatives in `motion.md`.

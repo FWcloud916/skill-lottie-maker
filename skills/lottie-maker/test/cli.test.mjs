@@ -179,6 +179,133 @@ test("clone preserves source bytes and compare reports exact JSON paths", async 
   await assert.rejects(access(path.join(root, "missing-font-revision")));
 });
 
+async function runExpectingFailure(args) {
+  try {
+    await run(args);
+    throw new Error("expected command to exit non-zero");
+  } catch (error) {
+    if (!error.stdout) throw error;
+    return JSON.parse(error.stdout);
+  }
+}
+
+test("a line separator warns on bare inspect but errors on managed validate", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "lottie-maker-newline-"));
+  await run([
+    "init",
+    "--id",
+    "newline",
+    "--profile",
+    "custom",
+    "--width",
+    "320",
+    "--height",
+    "180",
+    "--fps",
+    "10",
+    "--duration",
+    "1",
+    "--title",
+    "Line one Line two",
+    "--out",
+    root,
+  ]);
+  const bundle = path.join(root, "newline");
+  const file = path.join(bundle, "animation.json");
+  const animation = JSON.parse(await readFile(file, "utf8"));
+  animation.layers[0].t.d.k[0].s.t = "Line one\nLine two";
+  await writeFile(file, `${JSON.stringify(animation, null, 2)}\n`);
+
+  // Bare JSON has no brief attached, so the skill did not author it: a line separator is
+  // reported as a warning, not an error, and inspect still exits 0.
+  const inspectReport = JSON.parse(
+    (await run(["inspect", file, "--json"])).stdout,
+  );
+  assert.equal(inspectReport.status, "valid");
+  assert.ok(
+    inspectReport.warnings.some((warning) =>
+      warning.includes("line separators are not portable"),
+    ),
+  );
+  assert.deepEqual(inspectReport.features.line_separators, [
+    "/layers/0/t/d/k/0/s/t",
+  ]);
+
+  // The brief.yaml copy binding still has to match the layer text exactly for validate to
+  // reach the promotion check, so keep it in sync with the edit above.
+  const briefFile = path.join(bundle, "brief.yaml");
+  await writeFile(
+    briefFile,
+    (await readFile(briefFile, "utf8")).replace(
+      "Line one Line two",
+      "Line one\\nLine two",
+    ),
+  );
+
+  const validateReport = await runExpectingFailure([
+    "validate",
+    bundle,
+    "--json",
+  ]);
+  assert.equal(validateReport.status, "invalid");
+  assert.ok(
+    validateReport.errors.some((error) =>
+      error.includes("line separators are not portable in a managed bundle"),
+    ),
+  );
+});
+
+test("validate reports every independent finding when the brief's profile also fails to resolve", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "lottie-maker-partial-"));
+  await run([
+    "init",
+    "--id",
+    "partial",
+    "--profile",
+    "custom",
+    "--width",
+    "320",
+    "--height",
+    "180",
+    "--fps",
+    "10",
+    "--duration",
+    "1",
+    "--out",
+    root,
+  ]);
+  const bundle = path.join(root, "partial");
+  const briefFile = path.join(bundle, "brief.yaml");
+  const brief = await readFile(briefFile, "utf8");
+  // Break profile resolution (fps must be an integer) and the copy binding in the same
+  // revision. Before the validateBundle decomposition, the profile-resolution throw
+  // discarded the copy-binding error; both must now be reported from one validate call.
+  await writeFile(
+    briefFile,
+    brief.replace("fps: 10", "fps: 10.5").replace("Replace me", "Renamed"),
+  );
+
+  const validateReport = await runExpectingFailure([
+    "validate",
+    bundle,
+    "--json",
+  ]);
+  assert.equal(validateReport.status, "invalid");
+  assert.ok(
+    validateReport.errors.some((error) => error.includes("fps must be")),
+  );
+  assert.ok(
+    validateReport.errors.some((error) =>
+      error.includes("copy.title must match its named text layer"),
+    ),
+  );
+  assert.ok(
+    validateReport.errors.some((error) =>
+      error.includes("profile-dependent checks were skipped"),
+    ),
+  );
+});
+
 test("validate rejects symlinked local assets", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "lottie-maker-symlink-"));
   await run([

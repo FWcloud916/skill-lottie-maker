@@ -76,12 +76,18 @@ requires `--width`, `--height`, `--fps`, and `--duration`.
 
 ## Reproducible examples
 
-The [`examples`](examples/) directory contains four validated bundles: the README hero above, a
-multilingual gear loop, a four-profile canvas comparison, and a deterministic inspection/rendering
-gate. It also includes one intentionally invalid remote-asset fixture for read-only diagnosis.
-Every valid example is rendered twice and hash-compared by the repository verification gate.
+The [`examples`](examples/) directory contains five validated bundles, shown below, plus one
+intentionally invalid remote-asset fixture for read-only diagnosis. Every valid example is rendered
+twice and hash-compared by the repository verification gate; one of them also carries
+[rendered-geometry contact claims](skills/lottie-maker/references/brief-contract.md#geometry-claims)
+checked against isolated per-layer pixels, not just declared bounds.
 
-Reproduce the hero end to end, including its storyboard preview stage:
+### [hello-lottie-maker](examples/hello-lottie-maker/) — README hero
+
+960×540 · `custom` profile · mixed Latin/CJK copy · two composition checkpoints
+
+The animation at the top of this README. Reproduce it end to end, including its storyboard
+preview stage:
 
 ```bash
 node skills/lottie-maker/scripts/lottie-maker.mjs validate examples/hello-lottie-maker --json
@@ -93,6 +99,48 @@ The storyboard renders exactly the declared composition checkpoints for review b
 render:
 
 ![hello-lottie-maker storyboard](docs/media/hello-lottie-maker-storyboard.png)
+
+### [skill-improvement-gear-loop](examples/skill-improvement-gear-loop/)
+
+720×720 · `custom` profile · 30 FPS seamless loop · three-gear mechanical mesh
+
+![skill-improvement-gear-loop example animation](docs/media/skill-improvement-gear-loop.gif)
+
+A hand-authored looping animation whose gear train is checked for genuine tooth engagement — not
+just visual proximity — by rendering each gear in isolation and measuring contact from the
+resulting pixel masks:
+
+```bash
+node skills/lottie-maker/scripts/lottie-maker.mjs geometry examples/skill-improvement-gear-loop --out /tmp/gear-geometry --json
+```
+
+### [threads-skill-intro](examples/threads-skill-intro/)
+
+1920×1080 · `custom` profile · 384 frames · four-act workflow walkthrough
+
+![threads-skill-intro storyboard](docs/media/threads-skill-intro-storyboard.png)
+
+A generated four-act narrative — inputs converging, aspect-ratio recomposition, the validation
+pipeline, and an interlocked four-gear improvement loop — built entirely from the shared
+construction primitives in [`emit.mjs`](skills/lottie-maker/scripts/lib/emit.mjs), the same module
+`init` uses for every new bundle. The storyboard above renders exactly its four declared
+composition checkpoints, one per act.
+
+### [profile-portability](examples/profile-portability/)
+
+1200×675 · `landscape-16x9` profile · one intent recomposed across four canvas shapes
+
+![profile-portability poster](docs/media/profile-portability-poster.png)
+
+### [deterministic-verification](examples/deterministic-verification/)
+
+1200×675 · `landscape-16x9` profile · inspect, block, render twice, hash-match
+
+![deterministic-verification poster](docs/media/deterministic-verification-poster.png)
+
+Every example accepts the same `validate`, `render`, and `verify` commands shown above; run
+`storyboard` on any bundle that declares composition checkpoints, and `geometry` on any bundle that
+declares `composition.geometry` claims.
 
 To revise the only copy of an imported animation safely, clone it byte-for-byte and audit the
 path-level diff after editing:

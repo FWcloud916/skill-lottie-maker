@@ -8,6 +8,8 @@ These bundles demonstrate four distinct `lottie-maker` outcomes:
 - `skill-improvement-gear-loop`: a 720×720, 30 FPS, four-second semantic loop with multilingual copy.
 - `profile-portability`: one focal signal adapted to the four built-in canvas families.
 - `deterministic-verification`: an inspection gate, blocked unsafe branch, and matching render hashes.
+- `threads-skill-intro`: a 1920×1080, 24 FPS, sixteen-second four-act narrative demonstrating the
+  full workflow, including a synchronized gear-mesh loop.
 
 `fixtures/unsafe-remote-asset.json` is intentionally invalid. It exists only to prove that `inspect`
 reports a remote asset without fetching it. Never treat it as a playable example.
@@ -23,5 +25,9 @@ node skills/lottie-maker/scripts/lottie-maker.mjs inspect examples/fixtures/unsa
 ```
 
 Run `node examples/build-showcases.mjs` only when intentionally rebuilding the two generated
-landscape examples, and `node examples/hello-lottie-maker/build.mjs` for the README hero. Committed
-JSON remains the canonical source reviewed by visual QA.
+landscape examples, `node examples/hello-lottie-maker/build.mjs` for the README hero, and
+`node examples/threads-skill-intro/build.mjs` for the four-act showcase. Committed JSON remains
+the canonical source reviewed by visual QA; `examples/validate.mjs` checks that every builder's
+output still matches its committed `animation.json`, so a rebuild that changes the output requires
+a fresh review, not just a re-run. All three builders share their JSON-construction primitives from
+[`skills/lottie-maker/scripts/lib/emit.mjs`](../skills/lottie-maker/scripts/lib/emit.mjs).

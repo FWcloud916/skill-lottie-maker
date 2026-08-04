@@ -15,7 +15,7 @@ import process from "node:process";
 import { promisify } from "node:util";
 import YAML from "yaml";
 
-import { assertKebab, parseArgs, writeJson } from "./lib/io.mjs";
+import { assertKebab, parseArgs, pointerToken, writeJson } from "./lib/io.mjs";
 import {
   createAnimation,
   inspectAnimation,
@@ -25,6 +25,7 @@ import {
 import { PROFILES, resolveProfile } from "./lib/profiles.mjs";
 import { ffmpegArgs } from "./lib/media.mjs";
 import { renderSamples, renderStoryboard } from "./lib/render.mjs";
+import { verifyGeometry } from "./lib/geometry.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -38,7 +39,8 @@ function usage() {
   lottie-maker.mjs validate <bundle|animation.json> [--json]
   lottie-maker.mjs storyboard <bundle|animation.json> --out <dir>
   lottie-maker.mjs render <bundle|animation.json> --out <dir> [--all-frames] [--allow-large-render] [--mp4|--gif]
-  lottie-maker.mjs verify <bundle|animation.json> --out <dir> [--full] [--allow-large-render]
+  lottie-maker.mjs geometry <bundle> --out <dir> [--json] [--dry-run] [--frames <start>:<count>[:<stride>]] [--allow-large-geometry]
+  lottie-maker.mjs verify <bundle|animation.json> --out <dir> [--full] [--allow-large-render] [--geometry] [--allow-large-geometry]
 
 profiles: ${[...Object.keys(PROFILES), "custom"].join(", ")}`;
 }
@@ -170,10 +172,6 @@ async function clone(options) {
   process.stdout.write(
     `${JSON.stringify({ ...preview, cloned_sha256: clonedReport.sha256 }, null, 2)}\n`,
   );
-}
-
-function pointerToken(value) {
-  return String(value).replaceAll("~", "~0").replaceAll("/", "~1");
 }
 
 function changedPaths(before, after, pointer = "", changes = []) {
@@ -377,6 +375,86 @@ async function encodeMedia(output, report, format) {
   await execFileAsync("ffmpeg", args, { maxBuffer: 10 * 1024 * 1024 });
 }
 
+function parseFramesOption(value) {
+  const parts = value.split(":");
+  const start = Number(parts[0]);
+  const count = Number(parts[1]);
+  const stride = parts[2] === undefined ? 1 : Number(parts[2]);
+  if (
+    !Number.isInteger(start) ||
+    !Number.isInteger(count) ||
+    !Number.isInteger(stride) ||
+    start < 0 ||
+    count < 3 ||
+    stride < 1
+  )
+    throw new Error("--frames must be start:count[:stride]");
+  return { start, count, stride };
+}
+
+function bundleWithFramesOverride(bundle, frames) {
+  const geometry = (bundle.brief?.composition?.geometry ?? []).map((claim) => ({
+    ...claim,
+    frames,
+  }));
+  return {
+    ...bundle,
+    brief: {
+      ...bundle.brief,
+      composition: { ...bundle.brief.composition, geometry },
+    },
+  };
+}
+
+function printGeometryReport(report, json) {
+  if (json) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return;
+  }
+  if (report.status === "skipped") {
+    process.stdout.write(`status=skipped\nreason=${report.reason}\n`);
+    return;
+  }
+  if (report.status === "dry-run") {
+    process.stdout.write(
+      `status=dry-run\nclaims=${report.claims.length}\ndistinct_layers=${report.distinct_layers}\nestimated_renders=${report.estimated_renders}\n`,
+    );
+    return;
+  }
+  process.stdout.write(
+    `status=${report.status}\nmeasurements_sha256=${report.measurements_sha256}\n`,
+  );
+  for (const claim of report.claims)
+    process.stdout.write(
+      `claim ${claim.id}: ${claim.status}${claim.degenerate ? " (degenerate)" : ""}\n`,
+    );
+  for (const error of report.errors ?? [])
+    process.stderr.write(`error: ${error}\n`);
+}
+
+async function geometry(options) {
+  const input = options._[0];
+  if (!input) throw new Error("input path is required");
+  const output = path.resolve(required(options, "out"));
+  const bundle = await loadBundle(input);
+  if (!bundle.brief)
+    throw new Error("geometry verification requires a bundle with brief.yaml");
+  const validation = await validateBundle(bundle);
+  if (validation.status !== "valid")
+    throw new Error(`validation failed: ${validation.errors.join("; ")}`);
+  const effectiveBundle = options.frames
+    ? bundleWithFramesOverride(bundle, parseFramesOption(options.frames))
+    : bundle;
+  const report = await verifyGeometry(effectiveBundle, validation, output, {
+    dryRun: Boolean(options.dry_run),
+    allowLarge: Boolean(options.allow_large_geometry),
+  });
+  if (!options.dry_run && !["skipped", "dry-run"].includes(report.status))
+    await writeJson(path.join(output, "geometry-report.json"), report);
+  printGeometryReport(report, options.json);
+  if (report.status === "invalid") process.exitCode = 1;
+}
+
 async function verify(options) {
   const input = options._[0];
   if (!input) throw new Error("input path is required");
@@ -407,8 +485,21 @@ async function verify(options) {
     frame_sha256: first.frame_sha256,
     poster_sha256: first.poster_sha256,
   };
+  if (options.geometry) {
+    const bundle = await loadBundle(input);
+    const validation = await validateBundle(bundle);
+    const geometryReport = await verifyGeometry(
+      bundle,
+      validation,
+      path.join(output, "geometry"),
+      { allowLarge: Boolean(options.allow_large_geometry) },
+    );
+    report.geometry = geometryReport;
+    if (geometryReport.status === "invalid") report.status = "invalid";
+  }
   await writeJson(path.join(output, "verify-report.json"), report);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  if (report.status === "invalid") process.exitCode = 1;
 }
 
 async function main() {
@@ -424,6 +515,7 @@ async function main() {
   else if (command === "validate") await inspect(options, true);
   else if (command === "storyboard") await storyboard(options);
   else if (command === "render") await render(options);
+  else if (command === "geometry") await geometry(options);
   else if (command === "verify") await verify(options);
   else if (command === "--help") process.stdout.write(`${usage()}\n`);
   else throw new Error(`unknown command: ${command}\n${usage()}`);

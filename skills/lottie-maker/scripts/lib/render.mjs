@@ -6,9 +6,13 @@ import CanvasKitInit from "canvaskit-wasm/full";
 import { LIMITS } from "./profiles.mjs";
 import { sha256 } from "./io.mjs";
 
-const CANVASKIT_VERSION = "0.41.1";
+// Read from the installed dependency rather than a hand-maintained literal, so the version
+// reported in every render/geometry report cannot drift from what actually rendered it.
+export const CANVASKIT_VERSION = JSON.parse(
+  await readFile(new URL(import.meta.resolve("canvaskit-wasm/package.json"))),
+).version;
 
-async function canvasKit() {
+export async function canvasKit() {
   const base = path.dirname(
     new URL(import.meta.resolve("canvaskit-wasm/full")).pathname,
   );
@@ -34,7 +38,7 @@ function sampleFrames(frameCount, posterFrame, checkpoints = []) {
   ].sort((a, b) => a - b);
 }
 
-async function loadAssets(assetEntries) {
+export async function loadAssets(assetEntries) {
   const assets = {};
   for (const entry of assetEntries) {
     const bytes = await readFile(entry.path);
@@ -61,12 +65,10 @@ export function checkpointFrames(bundle) {
   ].sort((a, b) => a - b);
 }
 
-async function renderFrameSet(bundle, report, outputDir, frames) {
-  const animation = bundle.animation;
-  const ck = await canvasKit();
-  const surface = ck.MakeSurface(animation.w, animation.h);
-  if (!surface)
-    throw new Error("CanvasKit could not create a software surface");
+// Shared by renderFrameSet and any caller (e.g. isolated-layer geometry rendering) that needs
+// a loaded Skottie animation without the frame-encoding loop below. Throws on any error-level
+// Skottie message so a caller never renders a document Skottie itself rejected.
+export function createManagedAnimation(ck, animation, assets) {
   const skottieMessages = [];
   const logger = {
     onError(message, json) {
@@ -78,40 +80,60 @@ async function renderFrameSet(bundle, report, outputDir, frames) {
   };
   const managed = ck.MakeManagedAnimation(
     JSON.stringify(animation),
-    await loadAssets(report.assets),
+    assets,
     "",
     null,
     logger,
   );
-  if (!managed) {
-    surface.dispose();
-    throw new Error("CanvasKit could not load the Lottie document");
-  }
+  if (!managed) throw new Error("CanvasKit could not load the Lottie document");
   const skottieErrors = skottieMessages.filter(
     (entry) => entry.level === "error",
   );
   if (skottieErrors.length) {
     managed.delete();
-    surface.dispose();
     throw new Error(
       `Skottie rejected the document: ${skottieErrors.map((entry) => entry.message).join("; ")}`,
     );
   }
+  return { managed, skottieMessages };
+}
+
+async function renderFrameSet(bundle, report, outputDir, frames, { ck } = {}) {
+  const animation = bundle.animation;
+  const kit = ck ?? (await canvasKit());
+  const surface = kit.MakeSurface(animation.w, animation.h);
+  if (!surface)
+    throw new Error("CanvasKit could not create a software surface");
+  let managed;
+  let skottieMessages;
+  try {
+    ({ managed, skottieMessages } = createManagedAnimation(
+      kit,
+      animation,
+      await loadAssets(report.assets),
+    ));
+  } catch (error) {
+    surface.dispose();
+    throw error;
+  }
   const [renderWidth, renderHeight] = managed.size();
-  if (renderWidth !== animation.w || renderHeight !== animation.h)
+  if (renderWidth !== animation.w || renderHeight !== animation.h) {
+    managed.delete();
+    surface.dispose();
     throw new Error("CanvasKit size does not match the animation");
+  }
   await mkdir(outputDir, { recursive: true });
   const rendered = [];
   try {
     const canvas = surface.getCanvas();
     for (const frame of frames) {
-      canvas.clear(ck.TRANSPARENT);
+      canvas.clear(kit.TRANSPARENT);
       managed.seekFrame(frame);
-      managed.render(canvas, ck.LTRBRect(0, 0, animation.w, animation.h));
+      managed.render(canvas, kit.LTRBRect(0, 0, animation.w, animation.h));
       surface.flush();
       const image = surface.makeImageSnapshot();
       try {
-        const png = image.encodeToBytes(ck.ImageFormat.PNG, 100);
+        const png = image.encodeToBytes(kit.ImageFormat.PNG, 100);
         if (!png) throw new Error(`could not encode frame ${frame}`);
         const file = path.join(
           outputDir,
@@ -127,7 +149,7 @@ async function renderFrameSet(bundle, report, outputDir, frames) {
     managed.delete();
     surface.dispose();
   }
-  return { ck, rendered, skottieMessages };
+  return { ck: kit, rendered, skottieMessages };
 }
 
 export async function renderSamples(
