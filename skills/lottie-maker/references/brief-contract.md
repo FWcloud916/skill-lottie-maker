@@ -65,7 +65,15 @@ checkpoint describes a stable information state:
 - A text block sets `slot`, `align`, `max_lines`, and `min_font_size`. Its named native text layer,
   sampled anchor, line count, estimated width, and height must fit the declared block.
 - A card-backed block may set `card_layer` and pixel `padding`. `equal_size_group` requires matching
-  rectangle dimensions across peer cards.
+  rectangle dimensions across peer cards. A centered stroke paints half its width outward from the
+  nominal shape, so `padding` and any declared clearance must budget for the full stroke width plus
+  an antialiasing allowance — nominal-tangent geometry is drawn overlapping once a stroke is added.
+
+A text document's `t` must not contain `\n`, `\r`, or any other line-break character. Neither is a
+portable line break: measured against the pinned CanvasKit/Skottie build, `\n` renders inline as a
+substitute glyph rather than breaking the line, and no other Lottie player's handling of either
+character is established. Author a multi-line title as one text layer per line, each its own
+composition block, instead of embedding a separator in a single text document.
 
 Declare another checkpoint whenever hierarchy or block positions materially change. For another
 aspect ratio, write new bounds and geometry; do not derive a portrait composition by uniformly
@@ -73,7 +81,56 @@ scaling a landscape composition.
 
 Every `copy` value is a non-empty string. Bind it to a same-named native text layer with identical
 fallback text. Slots are optional metadata; if added, retain the native fallback so players that
-ignore or reject slots still render copy.
+ignore or reject slots still render copy. A slot must bind to either a `sid` present on a property
+in the animation or an existing native layer name — an unbound slot key is inert metadata that can
+silently drift from what actually renders. Its resolved text must match the bound layer's fallback
+`t` verbatim, and it must also match `brief.copy` when both are declared. A slot expressed as a
+full text document (not a bare string property) must carry the complete style set the bound layer
+declares — `f`, `s`, `j`, `tr`, `lh`, and `fc` — not only `t`, `f`, and `s`; a slot document missing
+style fields has substituted copy that can render invisible even though the text itself is correct.
+
+## Geometry claims
+
+`composition.geometry` is optional and declares a mechanical relation between two named root
+layers, checked from rendered pixels rather than declared bounds:
+
+```yaml
+composition:
+  version: 1
+  geometry:
+    - id: main-upper-mesh
+      relation: interlocked # interlocked | disjoint | contained
+      layers: [gear-main, gear-upper]
+      frames: { start: 0, count: 24, stride: 1 } # optional; defaults to a 24-frame contiguous window
+      criteria:
+        min_engagement_px: 8 # required for interlocked; at least 2
+        min_overlap_pixels: 4 # default 4 — below this, antialiasing can fabricate contact
+        min_body_clearance_px: 0 # default 0
+        body_layers: [main-hub, upper-hub] # optional; enables an exact body-overlap test
+        alpha_threshold: 128 # default 128, the half-coverage edge
+      note: teeth engage without the hubs touching
+```
+
+Run `geometry <bundle> --out <dir>` (or `verify --geometry`) to measure it. `id` is kebab-case and
+unique; `layers` names exactly two distinct existing root layers; the sampling window stays inside
+the timeline and covers at least 3 frames. A claim with no `composition.geometry` block is a no-op
+— `geometry` reports `status: "skipped"` rather than an error, so declaring no claims is always
+valid.
+
+The two layers are rendered in isolation — every other root layer's opacity zeroed — so the
+measurement comes from which layer drew a pixel, never from its color; palette-based part
+separation is not used and would not be reliable (see `docs/lottie-production-guide.md`). Sampling
+is a contiguous window, not a fixed stride or percentile spread, because aliasing against a
+mechanism's period cannot be predicted ahead of time — only detected: a claim whose every sampled
+metric measures identically is reported as degenerate, whether the cause is aliasing or the
+geometry genuinely being static. `contained`'s `layers` is ordered `[inner, outer]`.
+
+Geometry claims see only **root layers**; a layer nested inside a precomp asset cannot be named
+directly. This is the same lookup `composition.checkpoints`' `card_layer` uses; the copy-binding
+check elsewhere in this contract recurses into precomps, so root-layer names are not guaranteed
+unique across both checks in the same bundle. Track mattes are not supported: isolating a layer by
+zeroing every other layer's opacity cannot reproduce a matte, so a bundle with any track matte
+fails the whole geometry pass rather than measuring an approximation.
 
 For a managed bundle, keep the root shape layer named `background` as the final entry in
 `animation.json`'s root `layers` array. Earlier root entries paint above later entries in the managed

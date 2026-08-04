@@ -41,6 +41,7 @@ export const LIMITS = Object.freeze({
   maxAssetBytes: 32_000_000,
   maxTotalAssetBytes: 256_000_000,
   largeRenderBytes: 4 * 1024 ** 3,
+  maxIsolatedRenders: 512,
 });
 
 export function resolveProfile(brief) {

@@ -9,6 +9,10 @@ workflow.
 
 | Status | Item | Folder | Scope | Ticket | Plan | Created | Notes |
 |---|---|---|---|---|---|---|---|
+| `review` | Showcase all five examples in the README | `progress/2026-08-04-showcase-five-examples/` | `skill-lottie-maker` | N/A | N/A | 2026-08-04 | Gallery mixing GIF/storyboard/poster; fixed a caption-clipping bug and a gear-tooth-module mismatch the geometry claims couldn't detect |
+| `review` | Verify rendered geometry (contact claims + executable stroke budget) | `progress/2026-08-04-verify-rendered-geometry/` | `skill-lottie-maker` | N/A | N/A | 2026-08-04 | New `geometry.mjs` + `geometry` CLI subcommand; corrected gear-loop's tangent-only defect; 0.3.0; 3rd of 3 port items |
+| `review` | Share Lottie emit primitives across generator and examples | `progress/2026-08-04-share-lottie-emit-primitives/` | `skill-lottie-maker` | N/A | N/A | 2026-08-04 | New `scripts/lib/emit.mjs`; all 4 example JSONs rebuilt, pixel-verified (AE=0); 0.2.2; 2nd of 3 port items |
+| `review` | Harden bundle validation (line separators, slots, short-circuit) | `progress/2026-08-04-harden-bundle-validation/` | `skill-lottie-maker` | N/A | N/A | 2026-08-04 | Line-separator ban, slot/fallback consistency, `validateBundle` decomposition; 0.2.1; 1st of 3 port items |
 | `done` | Validate managed background layer order | `progress/2026-08-03-validate-managed-background-order/` | `skill-lottie-maker` | N/A | N/A | 2026-08-03 | Managed bundles keep an opaque background below content without changing bare-import diagnostics |
 | `review` | Preserve failed Lottie bundle artifacts | `progress/2026-08-03-preserve-failed-bundles/` | `skill-lottie-maker` | N/A | N/A | 2026-08-03 | Fail closed retains bundle evidence; cleanup requires confirmation |
 | `done` | Add the README hero example animation | `progress/2026-08-01-add-readme-hero-example/` | `skill-lottie-maker` | N/A | N/A | 2026-08-01 | `hello-lottie-maker` bundle; README GIF/storyboard media |

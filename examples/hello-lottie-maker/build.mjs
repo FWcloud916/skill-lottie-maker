@@ -1,5 +1,13 @@
 import { writeFile } from "node:fs/promises";
 
+import {
+  backgroundLayer,
+  layerRank,
+  rectangle,
+  shapeLayer,
+  textLayer,
+} from "../../skills/lottie-maker/scripts/lib/emit.mjs";
+
 const W = 960;
 const H = 540;
 const FPS = 24;
@@ -15,131 +23,41 @@ const color = {
   info: [0.937, 0.965, 1, 1],
 };
 
-const staticProperty = (k) => ({ a: 0, k });
-
-function entranceOpacity(start) {
-  const keys = [];
-  if (start > 0) keys.push({ t: 0, s: [0] }, { t: start, s: [0], e: [100] });
-  else keys.push({ t: 0, s: [0], e: [100] });
-  keys.push({ t: start + 10, s: [100] });
-  return { a: 1, k: keys };
+function title(name, text, x, y, size, start, options = {}) {
+  return textLayer(name, text, [x, y], {
+    size,
+    start,
+    outPoint: OP,
+    font,
+    justify: options.justify ?? 0,
+    lineHeight: options.lineHeight,
+    color: options.color ?? color.text,
+    slide: { offset: options.offset ?? 26 },
+  });
 }
 
-function animatedPosition(x, y, start, offset = 26) {
-  return {
-    a: 1,
-    k: [
-      { t: Math.max(0, start), s: [x, y + offset, 0], e: [x, y, 0] },
-      { t: start + 12, s: [x, y, 0] },
-    ],
-  };
-}
-
-function textLayer(name, text, x, y, size, start, options = {}) {
-  const document = {
-    t: text,
-    f: font,
-    s: size,
-    j: options.justify ?? 0,
-    tr: 0,
-    lh: options.lineHeight ?? Math.round(size * 1.28),
-    fc: (options.color ?? color.text).slice(0, 3),
-  };
-  return {
-    ty: 5,
-    nm: name,
-    ip: 0,
-    op: OP,
-    st: 0,
-    ks: {
-      o: entranceOpacity(start),
-      r: staticProperty(0),
-      p: animatedPosition(x, y, start, options.offset ?? 26),
-      a: staticProperty([0, 0, 0]),
-      s: staticProperty([100, 100, 100]),
-    },
-    t: { a: [], p: {}, d: { k: [{ t: 0, s: document }] } },
-  };
-}
-
-function shapeLayer(name, shapes, x, y, start, options = {}) {
-  return {
-    ty: 4,
-    nm: name,
-    ip: 0,
-    op: OP,
-    st: 0,
-    ks: {
-      o: entranceOpacity(start),
-      r: staticProperty(0),
-      p: animatedPosition(x, y, start, options.offset ?? 20),
-      a: staticProperty([0, 0, 0]),
-      s: staticProperty([100, 100, 100]),
-    },
-    shapes,
-  };
-}
-
-function rectangle(width, height, fill, stroke, radius = 20) {
-  return {
-    ty: "gr",
-    it: [
-      {
-        ty: "rc",
-        p: staticProperty([0, 0]),
-        s: staticProperty([width, height]),
-        r: staticProperty(radius),
-      },
-      { ty: "fl", c: staticProperty(fill), o: staticProperty(100) },
-      {
-        ty: "st",
-        c: staticProperty(stroke),
-        o: staticProperty(100),
-        w: staticProperty(2),
-        lc: 2,
-        lj: 2,
-      },
-      {
-        ty: "tr",
-        p: staticProperty([0, 0]),
-        a: staticProperty([0, 0]),
-        s: staticProperty([100, 100]),
-        r: staticProperty(0),
-        o: staticProperty(100),
-      },
-    ],
-  };
+function card(name, shapes, x, y, start, options = {}) {
+  return shapeLayer(name, shapes, [x, y], {
+    start,
+    outPoint: OP,
+    slide: { offset: options.offset ?? 20 },
+  });
 }
 
 function underline(width) {
-  return {
-    ty: "gr",
-    it: [
-      {
-        ty: "rc",
-        p: staticProperty([width / 2, 0]),
-        s: staticProperty([width, 8]),
-        r: staticProperty(4),
-      },
-      { ty: "fl", c: staticProperty(color.accent), o: staticProperty(100) },
-      {
-        ty: "tr",
-        p: staticProperty([0, 0]),
-        a: staticProperty([0, 0]),
-        s: staticProperty([100, 100]),
-        r: staticProperty(0),
-        o: staticProperty(100),
-      },
-    ],
-  };
+  return rectangle([width, 8], {
+    fill: color.accent,
+    radius: 4,
+    position: [width / 2, 0],
+  });
 }
 
 const layers = [];
 
-layers.push(textLayer("title", "lottie-maker", 70, 150, 56, 0));
-layers.push(shapeLayer("title-underline", [underline(310)], 70, 190, 8));
+layers.push(title("title", "lottie-maker", 70, 150, 56, 0));
+layers.push(card("title-underline", [underline(310)], 70, 190, 8));
 layers.push(
-  textLayer("subtitle", "可攜、可驗證、可重現的 Lottie JSON", 70, 230, 28, 10, {
+  title("subtitle", "可攜、可驗證、可重現的 Lottie JSON", 70, 230, 28, 10, {
     color: color.muted,
   }),
 );
@@ -151,16 +69,22 @@ const steps = [
 ];
 for (const step of steps) {
   layers.push(
-    shapeLayer(
+    card(
       `${step.name}Card`,
-      [rectangle(220, 72, color.info, color.accent)],
+      [
+        rectangle([220, 72], {
+          fill: color.info,
+          stroke: color.accent,
+          radius: 20,
+        }),
+      ],
       step.x,
       400,
       step.start,
     ),
   );
   layers.push(
-    textLayer(step.name, step.label, step.x, 408, 24, step.start + 2, {
+    title(step.name, step.label, step.x, 408, 24, step.start + 2, {
       color: color.accent,
       justify: 2,
       offset: 18,
@@ -168,26 +92,9 @@ for (const step of steps) {
   );
 }
 
-layers.push({
-  ty: 4,
-  nm: "background",
-  ip: 0,
-  op: OP,
-  st: 0,
-  ks: {
-    o: staticProperty(100),
-    r: staticProperty(0),
-    p: staticProperty([W / 2, H / 2, 0]),
-    a: staticProperty([0, 0, 0]),
-    s: staticProperty([100, 100, 100]),
-  },
-  shapes: [rectangle(W, H, color.canvas, color.canvas, 0)],
-});
+layers.push(backgroundLayer([W, H], { fill: color.canvas, outPoint: OP }));
 
-layers.sort((first, second) => {
-  const rank = (layer) => (layer.nm === "background" ? 2 : layer.ty === 5 ? 0 : 1);
-  return rank(first) - rank(second);
-});
+layers.sort((first, second) => layerRank(first) - layerRank(second));
 
 const animation = {
   v: "5.12.2",

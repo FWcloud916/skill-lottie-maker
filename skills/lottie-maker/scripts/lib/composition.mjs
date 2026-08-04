@@ -1,4 +1,6 @@
-const COMPOSITION_FIELDS = new Set(["version", "checkpoints"]);
+import { estimateTextUnits } from "./text-metrics.mjs";
+
+const COMPOSITION_FIELDS = new Set(["version", "checkpoints", "geometry"]);
 const CHECKPOINT_FIELDS = new Set(["frame", "reading_order", "blocks"]);
 const BLOCK_FIELDS = new Set([
   "id",
@@ -15,19 +17,41 @@ const BLOCK_FIELDS = new Set([
 const ROLES = new Set(["anchor", "support", "active"]);
 const ALIGNMENTS = new Set(["left", "center", "right"]);
 
+const GEOMETRY_FIELDS = new Set([
+  "id",
+  "relation",
+  "layers",
+  "frames",
+  "criteria",
+  "note",
+]);
+const FRAMES_FIELDS = new Set(["start", "count", "stride"]);
+const CRITERIA_FIELDS = new Set([
+  "min_engagement_px",
+  "max_engagement_px",
+  "min_overlap_pixels",
+  "max_overlap_pixels",
+  "min_body_clearance_px",
+  "body_layers",
+  "max_outside_px",
+  "alpha_threshold",
+]);
+// Deliberately not yet supported: a true minimum-distance criterion needs a distance
+// transform, a second algorithm to test, and every empirical failure this feature exists to
+// catch is already caught by the binary overlap checks above. Reject rather than silently
+// accept and ignore.
+const UNSUPPORTED_CRITERIA_FIELDS = new Set([
+  "min_clearance_px",
+  "min_padding_px",
+]);
+const GEOMETRY_RELATIONS = new Set(["interlocked", "disjoint", "contained"]);
+const GEOMETRY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+
 function rejectUnknown(value, allowed, pointer, errors) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) errors.push(`${pointer}/${key}: unknown field`);
   }
-}
-
-function estimateTextUnits(text) {
-  return [...text].reduce((total, character) => {
-    if (/\s/u.test(character)) return total + 0.35;
-    if (/^[\u0020-\u007e]$/u.test(character)) return total + 0.58;
-    return total + 1;
-  }, 0);
 }
 
 function sampledValue(property, frame) {
@@ -102,6 +126,153 @@ function validBounds(bounds) {
   );
 }
 
+// Structural validation only — no rendering. A geometry claim's actual contact is measured by
+// scripts/lib/geometry.mjs against rendered pixels; this only checks the claim is well formed
+// enough to attempt that measurement (a real window, two distinct existing root layers, a
+// known relation, sane criteria).
+export function validateGeometryClaims(brief, animation, profile) {
+  const errors = [];
+  const geometry = brief?.composition?.geometry;
+  if (geometry == null) return errors;
+  if (!Array.isArray(geometry)) return ["composition.geometry must be a list"];
+  const rootLayerNames = new Set(
+    (animation.layers ?? [])
+      .map((layer) => layer?.nm)
+      .filter((name) => typeof name === "string"),
+  );
+  const ids = new Set();
+  geometry.forEach((claim, index) => {
+    const pointer = `composition.geometry[${index}]`;
+    if (!claim || typeof claim !== "object" || Array.isArray(claim)) {
+      errors.push(`${pointer} must be a mapping`);
+      return;
+    }
+    rejectUnknown(claim, GEOMETRY_FIELDS, pointer, errors);
+    if (typeof claim.id !== "string" || !GEOMETRY_ID_PATTERN.test(claim.id))
+      errors.push(`${pointer}.id must be kebab-case`);
+    else if (ids.has(claim.id)) errors.push(`${pointer}.id must be unique`);
+    else ids.add(claim.id);
+
+    if (!GEOMETRY_RELATIONS.has(claim.relation))
+      errors.push(
+        `${pointer}.relation must be interlocked, disjoint, or contained`,
+      );
+
+    if (
+      !Array.isArray(claim.layers) ||
+      claim.layers.length !== 2 ||
+      claim.layers[0] === claim.layers[1] ||
+      !claim.layers.every((name) => typeof name === "string")
+    ) {
+      errors.push(`${pointer}.layers must name exactly two distinct layers`);
+    } else {
+      for (const name of claim.layers)
+        if (!rootLayerNames.has(name))
+          errors.push(
+            `${pointer}.layers must name an existing root layer: ${name}`,
+          );
+    }
+
+    const frames = claim.frames;
+    if (frames != null) {
+      if (!frames || typeof frames !== "object" || Array.isArray(frames)) {
+        errors.push(`${pointer}.frames must be a mapping`);
+      } else {
+        rejectUnknown(frames, FRAMES_FIELDS, `${pointer}.frames`, errors);
+        const start = frames.start ?? 0;
+        const count = frames.count ?? Math.min(24, profile.frameCount);
+        const stride = frames.stride ?? 1;
+        if (!Number.isInteger(start) || start < 0)
+          errors.push(`${pointer}.frames.start must be a non-negative integer`);
+        if (!Number.isInteger(count) || count < 3)
+          errors.push(
+            `${pointer}.frames.count must be an integer of at least 3`,
+          );
+        if (!Number.isInteger(stride) || stride < 1)
+          errors.push(`${pointer}.frames.stride must be a positive integer`);
+        if (
+          Number.isInteger(start) &&
+          Number.isInteger(count) &&
+          Number.isInteger(stride) &&
+          start >= 0 &&
+          count >= 1 &&
+          stride >= 1 &&
+          start + (count - 1) * stride >= profile.frameCount
+        )
+          errors.push(`${pointer}.frames must stay inside the timeline`);
+      }
+    }
+
+    const criteria = claim.criteria ?? {};
+    if (typeof criteria !== "object" || Array.isArray(criteria)) {
+      errors.push(`${pointer}.criteria must be a mapping`);
+    } else {
+      rejectUnknown(
+        criteria,
+        new Set([...CRITERIA_FIELDS, ...UNSUPPORTED_CRITERIA_FIELDS]),
+        `${pointer}.criteria`,
+        errors,
+      );
+      for (const key of UNSUPPORTED_CRITERIA_FIELDS)
+        if (key in criteria)
+          errors.push(`${pointer}.criteria.${key} is not supported yet`);
+      const numericChecks = [
+        ["min_engagement_px", 0],
+        ["max_engagement_px", 0],
+        ["min_overlap_pixels", 0],
+        ["max_overlap_pixels", 0],
+        ["min_body_clearance_px", 0],
+        ["max_outside_px", 0],
+      ];
+      for (const [key, minimum] of numericChecks) {
+        if (criteria[key] == null) continue;
+        if (typeof criteria[key] !== "number" || criteria[key] < minimum)
+          errors.push(
+            `${pointer}.criteria.${key} must be a non-negative number`,
+          );
+      }
+      if (
+        criteria.alpha_threshold != null &&
+        (!Number.isInteger(criteria.alpha_threshold) ||
+          criteria.alpha_threshold < 0 ||
+          criteria.alpha_threshold > 255)
+      )
+        errors.push(
+          `${pointer}.criteria.alpha_threshold must be an integer from 0 to 255`,
+        );
+      if (
+        criteria.body_layers != null &&
+        (!Array.isArray(criteria.body_layers) ||
+          criteria.body_layers.length !== 2 ||
+          criteria.body_layers[0] === criteria.body_layers[1] ||
+          !criteria.body_layers.every((name) => rootLayerNames.has(name)))
+      )
+        errors.push(
+          `${pointer}.criteria.body_layers must name two distinct existing root layers`,
+        );
+      if (claim.relation === "interlocked") {
+        if (typeof criteria.min_engagement_px !== "number")
+          errors.push(
+            `${pointer}.criteria.min_engagement_px is required for an interlocked claim`,
+          );
+        else if (criteria.min_engagement_px < 2)
+          errors.push(
+            `${pointer}.criteria.min_engagement_px must be at least 2px; below that antialiasing can fabricate contact`,
+          );
+        if (
+          typeof criteria.min_engagement_px === "number" &&
+          typeof criteria.max_engagement_px === "number" &&
+          criteria.min_engagement_px >= criteria.max_engagement_px
+        )
+          errors.push(
+            `${pointer}.criteria.min_engagement_px must be less than max_engagement_px`,
+          );
+      }
+    }
+  });
+  return errors;
+}
+
 export function validateComposition(brief, animation, profile) {
   const errors = [];
   const composition = brief?.composition;
@@ -114,6 +285,7 @@ export function validateComposition(brief, animation, profile) {
     return ["composition must be a mapping"];
   rejectUnknown(composition, COMPOSITION_FIELDS, "composition", errors);
   if (composition.version !== 1) errors.push("composition.version must be 1");
+  errors.push(...validateGeometryClaims(brief, animation, profile));
   if (
     !Array.isArray(composition.checkpoints) ||
     !composition.checkpoints.length
@@ -209,12 +381,22 @@ export function validateComposition(brief, animation, profile) {
           else if (validBounds(block.bounds) && Number.isInteger(frame)) {
             const document = textDocument(layer, frame);
             const fontSize = document?.s;
-            const lines = String(document?.t ?? "").split("\n");
+            const rawText = String(document?.t ?? "");
+            // Neither "\n" nor "\r" is a portable line break (measured against the pinned
+            // CanvasKit/Skottie build: "\n" renders inline as a substitute glyph, not a
+            // break). A text document containing either is rejected elsewhere as invalid
+            // for a managed bundle; here it is measured conservatively as the renderer
+            // actually draws it — one concatenated line — rather than optimistically as
+            // if each separator produced a real line break.
+            const hasLineSeparator = /[\r\n]/u.test(rawText);
+            const lineCount = hasLineSeparator
+              ? rawText.split(/\r\n|[\r\n]/u).length
+              : 1;
             if (!Number.isInteger(block.max_lines) || block.max_lines < 1)
               errors.push(
                 `${blockPointer}.max_lines must be a positive integer`,
               );
-            else if (lines.length > block.max_lines)
+            else if (lineCount > block.max_lines)
               errors.push(`${blockPointer} exceeds max_lines`);
             if (
               typeof block.min_font_size !== "number" ||
@@ -229,11 +411,11 @@ export function validateComposition(brief, animation, profile) {
             if (typeof fontSize === "number") {
               const availableWidth = block.bounds[2] * profile.width;
               const availableHeight = block.bounds[3] * profile.height;
-              const requiredWidth = Math.max(
-                ...lines.map((line) => estimateTextUnits(line) * fontSize),
-              );
+              const requiredWidth = hasLineSeparator
+                ? estimateTextUnits(rawText.replace(/[\r\n]/gu, "")) * fontSize
+                : estimateTextUnits(rawText) * fontSize;
               const requiredHeight =
-                lines.length * (document?.lh ?? fontSize * 1.2);
+                lineCount * (document?.lh ?? fontSize * 1.2);
               if (requiredWidth > availableWidth + 1)
                 errors.push(`${blockPointer} text exceeds declared width`);
               if (requiredHeight > availableHeight + 1)

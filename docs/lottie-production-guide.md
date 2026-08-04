@@ -1,6 +1,6 @@
 # Lottie production experience guide
 
-> **Last updated:** 2026-08-03
+> **Last updated:** 2026-08-04
 
 Lessons distilled from real production use of this toolchain: constrained bundles that passed every
 structural gate and still shipped visible or semantic defects. This guide explains why the layered
@@ -22,6 +22,7 @@ defects were visible or semantic. Each layer proves one narrow thing, and no lay
 | CanvasKit render | The pinned Skottie runtime accepts and renders the bundle | Compatibility with any other player |
 | Double render and hashes | The output is reproducible | That reproducible pixels are correct |
 | Poster and contact sheet | Stable states and sampled transitions are reviewable | Every transient frame or loop boundary |
+| Rendered-geometry contact verification | Declared `interlocked`/`disjoint`/`contained` claims, measured from isolated per-layer pixels over a contiguous sampled window with aliasing/static detection | Semantic meaning of contact, or any relation not declared as a claim |
 | Full playback and targeted frames | Pacing, artifacts, and declared geometry can be judged | An automated semantic proof |
 | Downstream runtime QA | The actual delivery player reproduces text and motion | Owned by the consuming pipeline; a `valid` result here is never an all-player guarantee |
 
@@ -52,6 +53,21 @@ not a text check — only inspecting the rendered hold is. The same period showe
 invariant left as prose (body limits, naming, keyframe restrictions, font metadata) will eventually
 be violated; every invariant must be executable and fail closed before render.
 
+### Line-break characters are not a line break
+
+A two-line title validated at its widest declared line and still overflowed its safe area on
+render. The composition checker split the text document's string on `\n` and measured each
+resulting line separately, on the assumption that the renderer would break the line at the same
+point. Measured against the pinned CanvasKit/Skottie build, `\n` is not honored as a line break at
+all: it renders inline as a substitute glyph, and the true drawn width is the whole string
+concatenated, not the widest split segment. `\r` happened to break the line in that same build,
+but that behavior is undocumented and not established for any other Lottie player. No
+line-separator character is portable authoring for multi-line text; a text document containing
+one is rejected in a managed bundle, and the fit check now measures the concatenated string so an
+import that still carries one is scored the way the renderer actually draws it, not the way the
+split arithmetic assumed it would. Multi-line titles are authored as one text layer per line
+instead.
+
 ### A valid background can still hide the scene
 
 In the managed renderer, earlier root-layer array entries paint above later ones. An opaque
@@ -59,6 +75,21 @@ full-frame background placed first can therefore hide every text and shape layer
 render checks still succeed. Managed bundles keep `background` as the final root layer and validate
 that order before storyboard rendering. Bare imported JSON remains read-only and is not rejected or
 normalized solely for this managed convention.
+
+### A caption can be clipped by its own reference card
+
+A caption below a decorative card validated and looked correct in a spot check, then shipped with
+one letter silently broken: "Unsafe asset blocked" rendered as "Unsate asset blocked". The card sat
+15px above the caption's baseline — less clearance than every sibling caption in the same
+composition (17.5–21px) — and the card paints in front of the caption beneath it (earlier root
+entries paint over later ones, the same ordering rule as the background lesson above). At that
+clearance, only a character with a tall ascender reaching above the block's typical cap-height (the
+"f" in "Unsafe") poked into the card and had its top clipped; every other letter, and every other
+caption in the same composition, rendered untouched. Declared bounds and a first glance both looked
+fine — the defect was one specific glyph in one specific caption, invisible until read character by
+character. Vertical clearance between a caption and any shape painted in front of it must budget
+for the tallest ascender the copy can contain, not the block's average letter height, and a
+one-glyph difference is not something a skim catches — it needs to be read, not glanced at.
 
 ### Legal shapes are not meaningful shapes
 
@@ -77,6 +108,56 @@ visual pass reported meshing that did not exist because it judged nominal geomet
 samples. Claims such as "meshed", "connected", or "contained" must be derived from the actual
 rendered geometry with explicit contact criteria, sampled across the full motion interval, with the
 measured values and inspected frames recorded.
+
+This is now executable for two-layer relations. `composition.geometry` declares an `interlocked`,
+`disjoint`, or `contained` claim between two named layers; `geometry` (and `verify --geometry`)
+render each named layer in isolation — every other root layer's opacity zeroed, so the mask
+records which layer drew a pixel, never what color it drew — and measure contact from the
+resulting occupancy masks. Two lessons shaped the measurement itself:
+
+- **Separating overlapping parts by palette color is unreliable.** A fill only 18 units from the
+  canvas color, plus stroke antialiasing landing inside another swatch's tolerance, measured an
+  engagement depth 4.5× wrong. Isolated rendering removes the need to separate parts by color at
+  all.
+- **"Meshed" needs two separate conditions, not one.** A single overlap threshold cannot
+  distinguish envelope tangency from body interpenetration — the two failure modes recorded above.
+  `interlocked` requires both a minimum envelope engagement (kills "the parts never even reach
+  each other") and a minimum body clearance or zero body-layer overlap (kills "the envelopes
+  overlap but the load-bearing bodies pass through each other").
+- **Sampling still has to be a contiguous window, not a fixed stride or percentile spread.**
+  Aliasing depends on the mechanism's period, not the sample count, and cannot be predicted ahead
+  of time — a 384-frame animation sampled at stride 15 for 6 frames, or 144 frames at stride 12
+  for 12 frames, can measure the identical value at every sample purely because the stride is
+  commensurate with the period. The fix is not a smarter stride; it is detecting zero variance
+  across a contiguous window after the fact and treating it as a failed claim, whether the cause
+  is aliasing or the geometry genuinely being static.
+- **A passing claim proves the declared contact, not that the shapes were a valid pair to begin
+  with.** The first fix for the gear-loop example above only moved two gears to a center distance
+  that made an `interlocked` claim pass — center distance was the one variable it changed. The
+  claim passed, and it still looked wrong: the two driven gears reused the drive gear's tooth path
+  at a smaller layer scale, which shrinks the tooth pitch along with the gear, so two gears sharing
+  the same tooth count at different radii have different-sized teeth and cannot mesh correctly at
+  any center distance. Envelope engagement and body clearance can both look healthy while individual
+  teeth visibly clash or gap, because those criteria measure aggregate contact, not tooth-by-tooth
+  agreement. The real fix regenerated the smaller gears with a tooth count proportional to their
+  radius so the tooth module matched the drive gear, then used the same measurement tool to search
+  the remaining free variables (rotation phase, then center distance) for the configuration that
+  minimized envelope overlap variance across the full cycle — the tool is precise enough to tune a
+  design with, not just gate one after the fact.
+
+What remains manual: whether the claimed contact means anything (see the manual-review boundary
+below), and any geometric relation not expressed as a declared claim.
+
+### Nominal clearance is not drawn clearance
+
+A card containment check compared a shape layer's nominal rectangle size against its declared
+block bounds plus padding, and passed. The shape also carried a centered stroke, which paints half
+its width outward from the nominal path — so geometry that was tangent in the declared numbers
+necessarily overlapped once drawn. A zero-clearance design with a 2px stroke measured 80px of
+actual overlap; the same design at 0.78 units of nominal clearance with a 1px stroke measured
+zero. Any clearance or containment budget stated in nominal shape sizes must subtract the full
+stroke width plus an antialiasing allowance, not just padding — nominal geometry is not drawn
+geometry.
 
 ### Aspect ratios are compositions, not transforms
 
@@ -108,9 +189,13 @@ This guide intentionally repeats no checklist items. Apply:
 
 Automation cannot currently decide:
 
-- **Semantic meaning** — whether a legal, in-bounds shape communicates anything.
-- **Mechanical credibility** — whether contact actually occurs; a careless visual pass can report a
-  false positive.
+- **Semantic meaning** — whether a legal, in-bounds shape communicates anything, or whether
+  measured contact between two layers means anything to a viewer.
+- **Mechanical credibility beyond a declared claim** — whether contact between two named layers
+  actually occurs is now measured (see "Geometry claims need rendered evidence"), removing the
+  false positives a careless visual pass on sparse samples could report. What remains manual is
+  everything not expressed as a `composition.geometry` claim, and judging whether the measured
+  numbers matter for the design's intent.
 - **Poster representativeness** — whether a valid frame shows the strongest complete state.
 - **Downstream runtime coverage** — whether every consumer player reproduces the bundle; delivery
   and publication QA belong to the consuming pipeline.

@@ -10,7 +10,13 @@ const root = process.argv[1];
 const npm = JSON.parse(fs.readFileSync(`${root}/skills/lottie-maker/package.json`, "utf8"));
 const codex = JSON.parse(fs.readFileSync(`${root}/.codex-plugin/plugin.json`, "utf8"));
 const claude = JSON.parse(fs.readFileSync(`${root}/.claude-plugin/plugin.json`, "utf8"));
-if (npm.version !== codex.version || npm.version !== claude.version) throw new Error("manifest versions differ");
+const marketplace = JSON.parse(fs.readFileSync(`${root}/.claude-plugin/marketplace.json`, "utf8"));
+const marketplaceVersion = marketplace.plugins?.find((plugin) => plugin.name === "lottie-maker")?.version;
+if (
+  npm.version !== codex.version ||
+  npm.version !== claude.version ||
+  npm.version !== marketplaceVersion
+) throw new Error("manifest versions differ");
 if (codex.name !== "skill-lottie-maker" || claude.name !== "lottie-maker") throw new Error("plugin names are invalid");
 ' "$repo_root"
 
