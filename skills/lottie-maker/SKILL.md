@@ -18,6 +18,8 @@ copy supplied by the user, and use the bundled CLI for deterministic checks.
 - **Render or verify**: read [references/qa.md](references/qa.md) before generating previews.
 - **Choose motion**: read [references/motion-design.md](references/motion-design.md) when timing,
   easing, choreography, or poster selection is not already finalized.
+- **Before every `validate` run** (create and revise alike): run
+  [references/pre-validation-self-check.md](references/pre-validation-self-check.md).
 
 Resolve `<skill-dir>` to this `SKILL.md` directory. Run the CLI with:
 
@@ -55,7 +57,9 @@ node <skill-dir>/scripts/lottie-maker.mjs help
    instead of scaling a finished layout.
 5. Use readable holds, motion with a semantic purpose, deterministic geometry, and a meaningful
    final state. Do not introduce facts or claims absent from user sources.
-6. Validate, storyboard, inspect the checkpoint stills, then render, visually inspect, revise, and
+6. Run every applicable item of
+   [references/pre-validation-self-check.md](references/pre-validation-self-check.md).
+7. Validate, storyboard, inspect the checkpoint stills, then render, visually inspect, revise, and
    verify. Never silently switch renderer or loosen the portable profile after a failure.
 
 ## Revise
@@ -78,7 +82,9 @@ node <skill-dir>/scripts/lottie-maker.mjs help
    user explicitly authorizes normalization and accepts its compatibility impact.
 4. Run `compare <original> <revision> --json`. Review every `changed_paths` entry; if any path is
    unrelated to the request, restore it before continuing. Fail closed when `truncated` is true.
-5. Re-run validation and all previews affected by the change. A changed render requires a fresh
+5. Run every applicable item of
+   [references/pre-validation-self-check.md](references/pre-validation-self-check.md).
+6. Re-run validation and all previews affected by the change. A changed render requires a fresh
    visual inspection and determinism check. Re-inspect the original and confirm its final hash still
    equals the initial hash. Report the initial original hash, byte-identical pre-edit clone hash,
    final unchanged-original hash, post-edit revision hash, and accepted changed paths.

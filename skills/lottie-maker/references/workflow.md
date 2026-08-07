@@ -21,23 +21,26 @@ editing. Never use a remote URL, data URL, symlink, or path outside the bundle.
 1. Reserve a kebab-case bundle ID and confirm the destination is absent.
 2. Run `init --dry-run`, inspect the paths, then scaffold.
 3. Finalize `brief.yaml`; define composition checkpoints for stable holds and update `motion.md`
-   before authoring JSON.
+   before authoring JSON. When the animation has more than one distinct phase or scene, `motion.md`
+   MUST include a beat sheet — see [motion-design.md](motion-design.md).
 4. Bind each `copy` entry to a same-named native text layer. Add a slot only when the target player
    supports it, and always retain the matching fallback. Keep the managed `background` as the final
    root layer.
-5. Run `validate`. Fix copy binding, safe-area, overlap, reading-order, text-fit, card-padding, and
+5. Run every applicable item of [pre-validation-self-check.md](pre-validation-self-check.md) — it
+   catches the class of defect `validate` reports, before spending a validation cycle on it.
+6. Run `validate`. Fix copy binding, safe-area, overlap, reading-order, text-fit, card-padding, and
    equal-size errors without switching profile or renderer.
-6. Run `storyboard`; review each checkpoint still against the storyboard tier of
+7. Run `storyboard`; review each checkpoint still against the storyboard tier of
    [qa.md](qa.md) — semantic roles, hierarchy, alignment, text fit, peer sizing, and connector
    endpoints. Fix composition findings here, before any full render.
-7. If the brief declares `composition.geometry` claims, run `geometry` and inspect any failed or
+8. If the brief declares `composition.geometry` claims, run `geometry` and inspect any failed or
    degenerate claim's evidence (the worst frame plus each isolated layer mask) before continuing —
    a mechanical claim that is not yet meshed, or is only tangent, belongs here, not in the
    full-render step.
-8. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
-9. Revise, regenerate previews, and run `verify` (add `--geometry` when the brief declares claims)
-   until deterministic.
-10. Generate full frames or MP4/GIF only when the user requests them.
+9. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
+10. Revise, regenerate previews, and run `verify` (add `--geometry` when the brief declares claims)
+    until deterministic.
+11. Generate full frames or MP4/GIF only when the user requests them.
 
 ## Editing imported files
 
