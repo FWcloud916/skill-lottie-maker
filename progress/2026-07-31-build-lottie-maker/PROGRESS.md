@@ -1,11 +1,11 @@
 # Build lottie-maker standalone skill
 
 **Slug:** build-lottie-maker
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** [build-lottie-maker-lottie-maker-implementation-plan.md](../_plans/build-lottie-maker-lottie-maker-implementation-plan.md)
 **Created:** 2026-07-31
-**Updated:** 2026-07-31
+**Updated:** 2026-08-08
 
 ---
 
@@ -48,12 +48,14 @@ coupling.
 - Prepared final progress commit after public repository creation.
 - Trial-video rendering exposed 1200×675 yuv420p incompatibility; added deterministic 1px padding and regression coverage.
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-Implementation and review gates pass. The clean repository was placed at the requested sibling
-directory without `node_modules`, committed by feature, and connected to its public GitHub remote.
+Repository implemented, verified, and published to https://github.com/FWcloud916/skill-lottie-maker on main; the item stayed in review only because this project commits straight to main with no PR-merge gate to trip the tracker automatically.
 
-**Final status:** Implemented and verified on `main`; tracker remains in review because no PR merge occurred.
-**PR / Commit:** `1888045`, `43fe446`, `6674eb7`, `f9baeef`, `3f41c0e`
-**Follow-ups:** Install dependencies with `npm ci --ignore-scripts --prefix skills/lottie-maker`
-before local development.
+**Final status:** done
+**PR / Commit:** 1888045, 43fe446, 6674eb7, f9baeef, 3f41c0e
+**Follow-ups:** Install dependencies with npm ci --ignore-scripts --prefix skills/lottie-maker before local development.

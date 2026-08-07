@@ -1,11 +1,11 @@
 # Add reproducible showcase examples
 
 **Slug:** add-showcase-examples
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-07-31
-**Updated:** 2026-07-31
+**Updated:** 2026-08-08
 
 ---
 
@@ -37,10 +37,14 @@ diagnostic/deterministic gates without weakening the portable bundle contract.
 - Final `bash scripts/verify.sh` passed: 3 deterministic examples, 1 diagnostic fixture, 9 tests,
   ESLint, Prettier, eval validation, and manifest checks.
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-Examples are reproducible, deterministic, documented, and included in the repository verification gate.
+Merged to main via 9e87f90/517efda. Three portable deterministic examples plus one intentionally invalid remote-asset fixture, included in the repository verification gate. The noted brag-talker article-delivery follow-up shipped separately in the sibling project.
 
-**Final status:** review
-**PR / Commit:** `9e87f90`, `517efda`
-**Follow-ups:** Finish the separate `brag-talker` article delivery adapters and review before publication.
+**Final status:** done
+**PR / Commit:** 9e87f90, 517efda
+**Follow-ups:** None; the brag-talker-side follow-up was out of this repo's scope and has since shipped independently in that project.

@@ -1,11 +1,11 @@
 # Share Lottie JSON emit primitives across generator and examples
 
 **Slug:** share-lottie-emit-primitives
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-04
-**Updated:** 2026-08-04
+**Updated:** 2026-08-08
 
 ---
 
@@ -130,12 +130,14 @@ rendered-mask geometry can enforce it exactly).
 | `profile-portability` | `3f2c1f0927a54c535dfb1bb9fffa546487f607753d61d6a96baeb321b451723c` |
 | `deterministic-verification` | `61818e063f11d4cc7cea8a04f9f095e3ad6b90adce54ca61a9a43634b6bc7bb5` |
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-**Final status:** Complete — all task-list items done, `bash scripts/verify.sh` green, every
-rebuilt example verified pixel-identical (AE = 0) to its pre-refactor render.
-**PR / Commit:** Not yet opened; changes are on `claude/skill-lottie-maker-port-ac5124`.
-**Follow-ups:** Item 3 (`verify-rendered-geometry`, item D + executable E) is the last item in this
-port. It corrects `examples/skill-improvement-gear-loop`'s known tangent-only gear geometry
-(~1.58px measured envelope engagement) and makes the stroke-width clearance lesson (item E,
-documented only so far) executable via rendered-mask contact criteria.
+Merged to main via 5b98fc2. Extracted shared Lottie JSON construction primitives (scripts/lib/emit.mjs) used by createAnimation and all example builders; all four dependent examples rebuilt and verified pixel-identical (AE=0) to their pre-refactor renders.
+
+**Final status:** done
+**PR / Commit:** 5b98fc2
+**Follow-ups:** None.

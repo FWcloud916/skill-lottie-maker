@@ -1,11 +1,11 @@
 # Verify rendered geometry (contact claims + executable stroke budget)
 
 **Slug:** verify-rendered-geometry
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-04
-**Updated:** 2026-08-04
+**Updated:** 2026-08-08
 
 ---
 
@@ -150,15 +150,14 @@ demonstrate mechanical meshing.
 `examples/skill-improvement-gear-loop/animation.json` sha256:
 `aff31ca4ef0393e42c1eadeac253fa308a8c3ebe88af9739dc7ec99f320bc8ed`
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-**Final status:** Complete — all task-list items done, `bash scripts/verify.sh` green, the
-corrected example visually and numerically confirmed to mesh across the full rotation cycle. This
-closes out the three-item port of the sibling-project assessment (harden-bundle-validation →
-share-lottie-emit-primitives → verify-rendered-geometry).
-**PR / Commit:** Not yet opened; changes are on `claude/skill-lottie-maker-port-ac5124`.
-**Follow-ups:** None identified as blocking. Possible future work, not undertaken here: a true
-minimum-distance criterion (`min_clearance_px`/`min_padding_px`) via a distance transform, currently
-rejected by static validation as explicitly unsupported; extending geometry claims to layers nested
-inside precomp assets (currently root-layers-only, matching `composition.checkpoints`' existing
-`card_layer` lookup).
+Merged to main via 5b98fc2. New geometry.mjs + geometry CLI subcommand; composition.geometry claims (interlocked/disjoint/contained) checked by isolated-layer rendering and mask contact measurement; corrected gear-loop's tangent-only defect. This closes the 3-item sibling-project port.
+
+**Final status:** done
+**PR / Commit:** 5b98fc2
+**Follow-ups:** Possible future work, not required: a true minimum-distance criterion via distance transform; extending geometry claims to layers nested inside precomp assets.

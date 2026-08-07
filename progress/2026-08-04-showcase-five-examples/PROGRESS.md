@@ -1,11 +1,11 @@
 # Showcase all five examples in the README
 
 **Slug:** showcase-five-examples
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-04
-**Updated:** 2026-08-04
+**Updated:** 2026-08-08
 
 ---
 
@@ -160,17 +160,14 @@ underlying shapes were a valid pair to begin with — and that the same measurem
 claim can be used to search a design's free parameters for the best configuration, not just
 accept or reject one.
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-**Final status:** Complete. README shows all five examples: two with motion (hero GIF,
-gear-loop GIF), two with a multi-checkpoint storyboard (hero, threads-skill-intro), two with a
-single representative poster (profile-portability, deterministic-verification). Two real content
-defects found along the way were fixed at the source, not papered over in the screenshots:
-`deterministic-verification`'s clipped caption, and `skill-improvement-gear-loop`'s mismatched
-tooth module (a defect the prior port item's own geometry claims had not been capable of
-detecting, since they measure aggregate contact, not tooth-level shape agreement). Both are
-documented as production lessons. `bash scripts/verify.sh` green (64/64 tests, including the
-examples' own validate/verify/geometry/drift checks).
-**PR / Commit:** Not yet opened; changes are on `claude/skill-lottie-maker-port-ac5124`.
-**Follow-ups:** None. The previously-spawned background task for the caption bug was withdrawn
-since the fix landed in this item instead.
+Merged to main via 5b98fc2 (part of the 3-item sibling-project port). README shows all five examples; two real content defects (clipped caption, mismatched gear tooth module) found and fixed at the source.
+
+**Final status:** done
+**PR / Commit:** 5b98fc2
+**Follow-ups:** None.

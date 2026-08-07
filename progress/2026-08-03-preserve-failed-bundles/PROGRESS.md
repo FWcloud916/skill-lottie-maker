@@ -1,11 +1,11 @@
 # Preserve failed Lottie bundle artifacts
 
 **Slug:** preserve-failed-bundles
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-03
-**Updated:** 2026-08-03
+**Updated:** 2026-08-08
 
 ---
 
@@ -46,12 +46,14 @@ of this standalone skill.
   new revision destination, retained both prior bundles and all artifacts, and rejected cleanup or
   overwrite authorization.
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-Fail-closed handling now preserves failed and partial Lottie bundles as immutable evidence. Retry
-and continue clone the failed attempt to a new destination; restart clones the unchanged original.
-Cleanup remains a separate destructive action requiring exact-target user confirmation.
+Merged to main via 863992f. Fail-closed handling preserves failed and partial Lottie bundles as immutable evidence; retry/continue clone the failed attempt to a new destination, restart clones the unchanged original; cleanup remains a separate destructive action requiring exact-target confirmation.
 
-**Final status:** review
-**PR / Commit:** `863992f`
-**Follow-ups:** Review and mark the item done after acceptance.
+**Final status:** done
+**PR / Commit:** 863992f
+**Follow-ups:** None.

@@ -1,11 +1,11 @@
 # Harden bundle validation (line separators, slots, short-circuit)
 
 **Slug:** harden-bundle-validation
-**Status:** review
+**Status:** done
 **Ticket:** N/A
 **Related plan:** N/A
 **Created:** 2026-08-04
-**Updated:** 2026-08-04
+**Updated:** 2026-08-08
 
 ---
 
@@ -98,12 +98,14 @@ are separate, later progress items because they rebuild example bytes and need f
   example validate/verify (now 5 examples) → `npm test` (30/30) → eslint (clean) → prettier
   (clean, after formatting the two edited reference docs) → anti-coupling grep (clean).
 
+### 2026-08-08
+
+- Closed item as `done`.
+
 ## Outcome
 
-**Final status:** Complete — all task-list items done, `bash scripts/verify.sh` green.
-**PR / Commit:** Not yet opened; changes are on `claude/skill-lottie-maker-port-ac5124`.
-**Follow-ups:** Item 2 (`share-lottie-emit-primitives`, item C) and item 3
-(`verify-rendered-geometry`, item D + executable E) are the next two items in this port, per the
-approved plan. `examples/skill-improvement-gear-loop` is known to be tangent-only
-(~1.58px measured envelope engagement between `gear-main` and `gear-upper`) and will be corrected
-in item 3, not here.
+Merged to main via 5b98fc2. Rejected non-portable line-break characters in managed text documents, fixed composition text-fit math (concatenated width, not per-line max), added slot/fallback consistency validation, and decomposed validateBundle so one bad field no longer hides every other finding.
+
+**Final status:** done
+**PR / Commit:** 5b98fc2
+**Follow-ups:** None.
