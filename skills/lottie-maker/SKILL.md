@@ -77,14 +77,18 @@ node <skill-dir>/scripts/lottie-maker.mjs help
 2. Run `inspect` on the copy and record unsupported features, schema advisories, layer/font
    inventory, and the original hash before editing. A cloned standalone JSON intentionally has no
    `brief.yaml`; add sidecars only when the user requests conversion into a managed bundle.
-3. Locate the named text layer and the smallest timing property that implements the request. Change
+3. When the revision is driven by a visual or composition finding, re-inspect the storyboard
+   checkpoint stills — regenerate them when stale — before editing any JSON path. Fit arithmetic
+   proves a string fits its declared box, never that the composed frame reads correctly next to
+   every other element, and a bundle can pass every numeric check while still misreading visually.
+4. Locate the named text layer and the smallest timing property that implements the request. Change
    only those JSON paths. Preserve unknown keys and unsupported structures unless the
    user explicitly authorizes normalization and accepts its compatibility impact.
-4. Run `compare <original> <revision> --json`. Review every `changed_paths` entry; if any path is
+5. Run `compare <original> <revision> --json`. Review every `changed_paths` entry; if any path is
    unrelated to the request, restore it before continuing. Fail closed when `truncated` is true.
-5. Run every applicable item of
+6. Run every applicable item of
    [references/pre-validation-self-check.md](references/pre-validation-self-check.md).
-6. Re-run validation and all previews affected by the change. A changed render requires a fresh
+7. Re-run validation and all previews affected by the change. A changed render requires a fresh
    visual inspection and determinism check. Re-inspect the original and confirm its final hash still
    equals the initial hash. Report the initial original hash, byte-identical pre-edit clone hash,
    final unchanged-original hash, post-edit revision hash, and accepted changed paths.

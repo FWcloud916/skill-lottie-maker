@@ -1,6 +1,6 @@
 # Lottie production experience guide
 
-> **Last updated:** 2026-08-04
+> **Last updated:** 2026-08-09
 
 Lessons distilled from real production use of this toolchain: constrained bundles that passed every
 structural gate and still shipped visible or semantic defects. This guide explains why the layered
@@ -147,6 +147,33 @@ resulting occupancy masks. Two lessons shaped the measurement itself:
 
 What remains manual: whether the claimed contact means anything (see the manual-review boundary
 below), and any geometric relation not expressed as a declared claim.
+
+### An undeclared mechanical claim ships anyway
+
+The sibling consumer project published an article figure with three independently rotating gears
+and alt text asserting the exact contact claim its geometry verifier exists to prove — with no
+claim declared, so nothing measured it. The same gap existed here: the Threads showcase's four
+gears asserted a 251px working center distance in `motion.md` since first publication, but no
+`composition.geometry` claim made that sentence measurable until the rotation heuristic forced
+one — the retro-declared claims then measured 35–38px of real tooth engagement with ~25px of body
+clearance, evidence the prose alone never carried. `validate` now blocks two or more independently
+rotating layers with no geometry claims; the escape for rotation that genuinely claims nothing is
+an attested `mechanics: decorative`, and `mechanics: declared` covers mechanisms rotation-counting
+cannot see. The lesson generalizes: a claim that exists only as a sentence in a rationale is not
+verified by anything, and nothing detects its absence until a heuristic makes the common case
+undeniable.
+
+### A traced connector's rendered pixels are not ground truth — its declared vertices are
+
+Isolation-rendering a trim-revealed connector to test whether its endpoint touches a target
+frequently measures an empty or partial mask: before the trace starts the stroke is entirely
+invisible, and during it only a fragment is drawn. The `connected` claim therefore never renders
+the connector — trim changes how much of the path is drawn, never the vertices, so the endpoint is
+read once from the declared `sh` path (through static transforms) and only the target is rendered
+per sampled frame. The degeneracy detector is deliberately not applied to these claims: it exists
+because a periodic mechanism can alias against a matching sample stride, and a connector-target
+pair has no periodic motion — a constant gap across every sampled frame is the expected, correct
+outcome. Reuse a check's mechanism only as far as its underlying assumption holds.
 
 ### Nominal clearance is not drawn clearance
 

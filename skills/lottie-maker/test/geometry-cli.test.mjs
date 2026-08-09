@@ -217,3 +217,141 @@ test("verify --geometry merges the geometry pass into verify-report.json", async
   assert.equal(report.deterministic, true);
   assert.equal(report.geometry.status, "valid");
 });
+
+// --- connected claims measure against the target's rendered pixels ---
+
+async function injectConnectorAndTarget(bundle) {
+  const animationPath = path.join(bundle, "animation.json");
+  const animation = JSON.parse(await readFile(animationPath, "utf8"));
+  const staticKs = {
+    o: { a: 0, k: 100 },
+    r: { a: 0, k: 0 },
+    p: { a: 0, k: [0, 0, 0] },
+    a: { a: 0, k: [0, 0, 0] },
+    s: { a: 0, k: [100, 100, 100] },
+  };
+  const transform = {
+    ty: "tr",
+    p: { a: 0, k: [0, 0] },
+    a: { a: 0, k: [0, 0] },
+    s: { a: 0, k: [100, 100] },
+    r: { a: 0, k: 0 },
+    o: { a: 0, k: 100 },
+  };
+  // Target: a 40x40 filled square centered at (200, 90) -> spans x 180..220.
+  const target = {
+    ddd: 0,
+    ty: 4,
+    nm: "target",
+    sr: 1,
+    ks: { ...staticKs, p: { a: 0, k: [200, 90, 0] } },
+    ip: 0,
+    op: animation.op,
+    st: 0,
+    shapes: [
+      {
+        ty: "gr",
+        it: [
+          {
+            ty: "rc",
+            p: { a: 0, k: [0, 0] },
+            s: { a: 0, k: [40, 40] },
+            r: { a: 0, k: 0 },
+          },
+          { ty: "fl", c: { a: 0, k: [0.1, 0.2, 0.3, 1] }, o: { a: 0, k: 100 } },
+          transform,
+        ],
+      },
+    ],
+  };
+  // Connector: an open stroke from (50, 90) to (180, 90); its end lands exactly on the
+  // target's left edge, its start sits 130px away.
+  const connector = {
+    ddd: 0,
+    ty: 4,
+    nm: "connector",
+    sr: 1,
+    ks: staticKs,
+    ip: 0,
+    op: animation.op,
+    st: 0,
+    shapes: [
+      {
+        ty: "gr",
+        it: [
+          {
+            ty: "sh",
+            ks: {
+              a: 0,
+              k: {
+                c: false,
+                v: [
+                  [50, 90],
+                  [180, 90],
+                ],
+                i: [
+                  [0, 0],
+                  [0, 0],
+                ],
+                o: [
+                  [0, 0],
+                  [0, 0],
+                ],
+              },
+            },
+          },
+          {
+            ty: "st",
+            c: { a: 0, k: [0.1, 0.2, 0.3, 1] },
+            o: { a: 0, k: 100 },
+            w: { a: 0, k: 4 },
+            lc: 2,
+            lj: 2,
+          },
+          transform,
+        ],
+      },
+    ],
+  };
+  animation.layers.unshift(connector, target);
+  await writeFile(animationPath, JSON.stringify(animation));
+}
+
+test("a connected claim passes at the declared endpoint and fails at the far end", async () => {
+  const root = await mkdtemp(
+    path.join(os.tmpdir(), "lottie-maker-geometry-cli-"),
+  );
+  const bundle = await initBundle(root, "connected");
+  await injectConnectorAndTarget(bundle);
+  await setGeometry(bundle, [
+    {
+      id: "end-touches-target",
+      relation: "connected",
+      layers: ["connector", "target"],
+      frames: { start: 0, count: 3 },
+      criteria: { ends: "end", max_gap_px: 3 },
+    },
+    {
+      id: "start-should-not-touch",
+      relation: "connected",
+      layers: ["connector", "target"],
+      frames: { start: 0, count: 3 },
+      criteria: { ends: "start", max_gap_px: 3 },
+    },
+  ]);
+  const report = await runExpectingFailure([
+    "geometry",
+    bundle,
+    "--out",
+    path.join(root, "out"),
+    "--json",
+  ]);
+  assert.equal(report.status, "invalid");
+  const byId = Object.fromEntries(
+    report.claims.map((claim) => [claim.id, claim]),
+  );
+  assert.equal(byId["end-touches-target"].status, "valid");
+  assert.equal(byId["end-touches-target"].degenerate, false);
+  assert.equal(byId["start-should-not-touch"].status, "failed");
+  assert.ok(report.errors.some((error) => error.includes("gap_start_px")));
+});

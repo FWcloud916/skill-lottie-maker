@@ -39,7 +39,10 @@ editing. Never use a remote URL, data URL, symlink, or path outside the bundle.
    full-render step.
 9. Run sampled `render`; inspect poster, early, quarter, middle, three-quarter, late, and final frames.
 10. Revise, regenerate previews, and run `verify` (add `--geometry` when the brief declares claims)
-    until deterministic.
+    until deterministic. A revision driven by a visual or composition finding starts by
+    re-inspecting the storyboard checkpoint stills — regenerate them when stale — before editing
+    any JSON path: the self-check's fit arithmetic proves a string fits its declared box, never
+    that the composed frame reads correctly next to every other element.
 11. Generate full frames or MP4/GIF only when the user requests them.
 
 ## Editing imported files

@@ -24,6 +24,7 @@ workflow.
 | `done` | Add reproducible showcase examples | `progress/2026-07-31-add-showcase-examples/` | `skill-lottie-maker` | N/A | N/A | 2026-07-31 | 3 deterministic examples and 1 diagnostic fixture verified |
 | `done` | Build lottie-maker standalone skill | `progress/2026-07-31-build-lottie-maker/` | `skill-lottie-maker` | N/A | [build-lottie-maker-lottie-maker-implementation-plan.md](_plans/build-lottie-maker-lottie-maker-implementation-plan.md) | 2026-07-31 |  |
 | `done` | Port motion-craft numeric guidance and a pre-validation self-check | `progress/2026-08-08-port-motion-craft-numerics/` | `skill-lottie-maker` | N/A | N/A | 2026-08-08 |  |
+| `done` | Port the consumer project's validation-gap gates (hold budget, connected claim, mechanics declaration, storyboard-before-revise) | `progress/2026-08-09-port-validation-gaps/` | `skill-lottie-maker` | N/A | N/A | 2026-08-09 |  |
 
 ## Status legend
 

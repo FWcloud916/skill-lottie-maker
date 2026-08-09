@@ -312,3 +312,236 @@ test("validateComposition surfaces geometry-claim errors alongside checkpoint er
   const errors = validateComposition(brief, animation, profile);
   assert(errors.some((error) => error.includes("composition.geometry[0]")));
 });
+
+// --- Reading-hold budget gate (port-validation-gaps) ---
+
+import {
+  readingBudgetFrames,
+  rotatingLayerNames,
+  stableWindow,
+  validateMechanics,
+} from "../scripts/lib/composition.mjs";
+
+const holdProfile = { width: 1000, height: 1000, frameCount: 100, fps: 24 };
+
+function holdFixture(opacityKeyframes) {
+  const { brief, animation } = fixture();
+  animation.layers[0].ks.o = { a: 1, k: opacityKeyframes };
+  return { brief, animation };
+}
+
+test("readingBudgetFrames applies the character rate, the word rate, and the 1-second floor", () => {
+  assert.equal(readingBudgetFrames("排版契約", 24), 27); // 4 chars / 3.5 per second
+  assert.equal(readingBudgetFrames("Start in three steps", 24), 32); // 4 words / 3 per second
+  assert.equal(readingBudgetFrames("Hi", 24), 24); // floor: 1 second
+});
+
+test("stableWindow spans from the last incoming to the next outgoing transform", () => {
+  const layer = {
+    ks: {
+      o: {
+        a: 1,
+        k: [
+          { t: 60, s: [0] },
+          { t: 70, s: [100] },
+          { t: 80, s: [100] },
+          { t: 90, s: [0] },
+        ],
+      },
+    },
+  };
+  assert.deepEqual(stableWindow(layer, 75, 100), {
+    start: 70,
+    end: 80,
+    hold: 10,
+  });
+  assert.equal(stableWindow(layer, 65, 100), null); // inside the entrance
+});
+
+test("a hold shorter than the reading budget is an error", () => {
+  const { brief, animation } = holdFixture([
+    { t: 60, s: [0] },
+    { t: 70, s: [100] },
+    { t: 80, s: [100] },
+    { t: 90, s: [0] },
+  ]);
+  const errors = validateComposition(brief, animation, holdProfile);
+  assert(errors.some((error) => error.includes("reading budget")));
+});
+
+test("a valid hold_waiver suppresses the hold error; an unused one is itself an error", () => {
+  const short = holdFixture([
+    { t: 60, s: [0] },
+    { t: 70, s: [100] },
+    { t: 80, s: [100] },
+    { t: 90, s: [0] },
+  ]);
+  short.brief.composition.checkpoints[0].blocks[0].hold_waiver =
+    "刻意的短停留：與所屬段落一同退場";
+  assert.deepEqual(
+    validateComposition(short.brief, short.animation, holdProfile),
+    [],
+  );
+
+  const generous = holdFixture([
+    { t: 10, s: [0] },
+    { t: 20, s: [100] },
+    { t: 79, s: [100] },
+    { t: 90, s: [0] },
+  ]);
+  generous.brief.composition.checkpoints[0].blocks[0].hold_waiver =
+    "這張豁免其實已經不需要了";
+  const errors = validateComposition(
+    generous.brief,
+    generous.animation,
+    holdProfile,
+  );
+  assert(errors.some((error) => error.includes("hold_waiver is unused")));
+});
+
+test("copy whose stable window runs to the end of the timeline is exempt", () => {
+  // A standalone Lottie persists on its final frame, so text with no exit stays readable
+  // indefinitely; the budget only gates copy that leaves before a reader can finish it.
+  const { brief, animation } = fixture();
+  assert.deepEqual(validateComposition(brief, animation, holdProfile), []);
+});
+
+test("a checkpoint inside a transition is reported", () => {
+  const { brief, animation } = holdFixture([
+    { t: 70, s: [0] },
+    { t: 80, s: [100] },
+  ]);
+  const errors = validateComposition(brief, animation, holdProfile);
+  assert(errors.some((error) => error.includes("inside a transition")));
+});
+
+test("a malformed hold_waiver is rejected", () => {
+  const { brief, animation } = fixture();
+  brief.composition.checkpoints[0].blocks[0].hold_waiver = "太短";
+  const errors = validateComposition(brief, animation, holdProfile);
+  assert(errors.some((error) => error.includes("at least 10 characters")));
+});
+
+// --- connected geometry claims (structural) ---
+
+test("a well-formed connected claim passes static validation", () => {
+  const brief = {
+    composition: {
+      geometry: [
+        {
+          id: "rail-to-gear",
+          relation: "connected",
+          layers: ["gear-upper", "gear-main"],
+          frames: { start: 0, count: 3 },
+          criteria: { ends: "end", max_gap_px: 3 },
+        },
+      ],
+    },
+  };
+  assert.deepEqual(
+    validateGeometryClaims(brief, geometryAnimation, geometryProfile),
+    [],
+  );
+});
+
+test("a connected claim requires ends, and connected-only criteria are rejected elsewhere", () => {
+  const brief = {
+    composition: {
+      geometry: [
+        {
+          id: "no-ends",
+          relation: "connected",
+          layers: ["gear-upper", "gear-main"],
+          frames: { start: 0, count: 3 },
+          criteria: { max_gap_px: -1 },
+        },
+        {
+          id: "stray-ends",
+          relation: "interlocked",
+          layers: ["gear-upper", "gear-main"],
+          frames: { start: 0, count: 3 },
+          criteria: { min_engagement_px: 8, ends: "end" },
+        },
+      ],
+    },
+  };
+  const errors = validateGeometryClaims(
+    brief,
+    geometryAnimation,
+    geometryProfile,
+  );
+  assert(
+    errors.some((error) =>
+      error.includes("[0].criteria.ends must be start, end, or both"),
+    ),
+  );
+  assert(
+    errors.some((error) =>
+      error.includes("[0].criteria.max_gap_px must be a non-negative number"),
+    ),
+  );
+  assert(
+    errors.some((error) =>
+      error.includes("[1].criteria.ends only applies to a connected claim"),
+    ),
+  );
+});
+
+// --- mechanics declaration (port-validation-gaps) ---
+
+function rotating(name, values) {
+  return {
+    nm: name,
+    ks: { r: { a: 1, k: values.map((value, t) => ({ t, s: [value] })) } },
+  };
+}
+
+test("rotatingLayerNames counts only actually-varying non-background rotations", () => {
+  const animation = {
+    layers: [
+      rotating("gear-1", [0, 90]),
+      rotating("gear-2", [10, 10]),
+      rotating("background", [0, 90]),
+      { nm: "static", ks: { r: { a: 0, k: 0 } } },
+    ],
+  };
+  assert.deepEqual(rotatingLayerNames(animation), ["gear-1"]);
+});
+
+test("two rotating layers with no geometry claims require a declaration", () => {
+  const animation = {
+    layers: [rotating("gear-1", [0, 90]), rotating("gear-2", [0, -90])],
+  };
+  const errors = validateMechanics({}, animation);
+  assert.equal(errors.length, 1);
+  assert(errors[0].includes("rotate independently"));
+  assert(errors[0].includes("gear-1, gear-2"));
+
+  const withClaims = validateMechanics(
+    { composition: { geometry: [{ id: "mesh" }] } },
+    animation,
+  );
+  assert.deepEqual(withClaims, []);
+
+  const decorative = validateMechanics({ mechanics: "decorative" }, animation);
+  assert.deepEqual(decorative, []);
+});
+
+test("mechanics: declared requires claims and decorative contradicts them", () => {
+  assert(
+    validateMechanics({ mechanics: "declared" }, { layers: [] })[0].includes(
+      "requires at least one composition.geometry claim",
+    ),
+  );
+  assert(
+    validateMechanics(
+      { mechanics: "decorative", composition: { geometry: [{ id: "x" }] } },
+      { layers: [] },
+    )[0].includes("contradicts declared composition.geometry claims"),
+  );
+  assert(
+    validateMechanics({ mechanics: "sometimes" }, { layers: [] })[0].includes(
+      "must be declared or decorative",
+    ),
+  );
+});

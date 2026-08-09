@@ -13,6 +13,7 @@ const BLOCK_FIELDS = new Set([
   "card_layer",
   "padding",
   "equal_size_group",
+  "hold_waiver",
 ]);
 const ROLES = new Set(["anchor", "support", "active"]);
 const ALIGNMENTS = new Set(["left", "center", "right"]);
@@ -35,7 +36,13 @@ const CRITERIA_FIELDS = new Set([
   "body_layers",
   "max_outside_px",
   "alpha_threshold",
+  "ends",
+  "max_gap_px",
 ]);
+// Criteria that only make sense for one relation are rejected on every other relation rather
+// than silently ignored (same policy as UNSUPPORTED_CRITERIA_FIELDS below).
+const CONNECTED_ONLY_CRITERIA = new Set(["ends", "max_gap_px"]);
+const CONNECTED_ENDS = new Set(["start", "end", "both"]);
 // Deliberately not yet supported: a true minimum-distance criterion needs a distance
 // transform, a second algorithm to test, and every empirical failure this feature exists to
 // catch is already caught by the binary overlap checks above. Reject rather than silently
@@ -44,7 +51,12 @@ const UNSUPPORTED_CRITERIA_FIELDS = new Set([
   "min_clearance_px",
   "min_padding_px",
 ]);
-const GEOMETRY_RELATIONS = new Set(["interlocked", "disjoint", "contained"]);
+const GEOMETRY_RELATIONS = new Set([
+  "interlocked",
+  "disjoint",
+  "contained",
+  "connected",
+]);
 const GEOMETRY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 function rejectUnknown(value, allowed, pointer, errors) {
@@ -89,6 +101,61 @@ function textDocument(layer, frame) {
   return document;
 }
 
+// Reading budget from the actual copy, per references/motion-design.md's two rate models:
+// character-rate scripts (CJK) at 3.5 characters/second, word-rate scripts at 3 words/second,
+// floor 1 second, converted with frames = round(seconds * fps).
+export function readingBudgetFrames(text, fps) {
+  const hasCharRateScript =
+    /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(
+      text,
+    );
+  const seconds = hasCharRateScript
+    ? Math.max(1, [...text.replace(/\s+/gu, "")].length / 3.5)
+    : Math.max(1, text.trim().split(/\s+/u).filter(Boolean).length / 3);
+  return Math.round(seconds * fps);
+}
+
+// Frame windows [start, end) where any of the layer's o/p/s/r transform properties actually
+// changes value. A keyframed-but-constant property produces no segment; a hold keyframe
+// (h: 1) whose next value differs produces a zero-length segment at the jump frame.
+function movingSegments(layer) {
+  const segments = [];
+  for (const key of ["o", "p", "s", "r"]) {
+    const property = layer?.ks?.[key];
+    if (!property || property.a !== 1 || !Array.isArray(property.k)) continue;
+    const keyframes = property.k;
+    for (let index = 0; index < keyframes.length - 1; index += 1) {
+      const current = keyframes[index];
+      const next = keyframes[index + 1];
+      const startValue = current?.s ?? null;
+      const endValue = current?.e ?? next?.s ?? null;
+      if (startValue == null || endValue == null) continue;
+      if (JSON.stringify(startValue) === JSON.stringify(endValue)) continue;
+      if (current.h === 1) {
+        segments.push([next.t ?? 0, next.t ?? 0]);
+      } else {
+        segments.push([current.t ?? 0, next.t ?? 0]);
+      }
+    }
+  }
+  return segments;
+}
+
+// The stable window around `frame`: from the end of the last moving segment at or before it
+// (or the layer's in-point) to the start of the first moving segment at or after it (or the
+// layer's out-point / timeline end). Null when the frame sits inside a moving segment.
+export function stableWindow(layer, frame, frameCount) {
+  const segments = movingSegments(layer);
+  let start = Math.max(0, layer?.ip ?? 0);
+  let end = Math.min(layer?.op ?? frameCount, frameCount);
+  for (const [segmentStart, segmentEnd] of segments) {
+    if (segmentStart < frame && segmentEnd > frame) return null;
+    if (segmentEnd <= frame && segmentEnd > start) start = segmentEnd;
+    if (segmentStart >= frame && segmentStart < end) end = segmentStart;
+  }
+  return { start, end, hold: end - start };
+}
+
 function rectangleSize(layer, frame) {
   for (const group of layer?.shapes ?? []) {
     for (const item of group?.it ?? []) {
@@ -126,6 +193,63 @@ function validBounds(bounds) {
   );
 }
 
+const MECHANICS_VALUES = new Set(["declared", "decorative"]);
+const MECHANICS_MINIMUM_ROTATING_LAYERS = 2;
+
+// Non-background root layers whose ks.r is keyframed and whose keyframe values actually
+// differ — a keyframed-but-constant rotation is not "animated". Layer-level rotation only:
+// nothing in this repo animates a shape group's own tr.r, and geometry claims already see
+// only root layers.
+export function rotatingLayerNames(animation) {
+  const names = [];
+  for (const layer of animation?.layers ?? []) {
+    if (!layer || typeof layer !== "object" || layer.nm === "background")
+      continue;
+    const rotation = layer.ks?.r;
+    if (!rotation || rotation.a !== 1 || !Array.isArray(rotation.k)) continue;
+    const values = new Set(
+      rotation.k
+        .map((keyframe) => keyframe?.s)
+        .filter((value) => value != null)
+        .map((value) => JSON.stringify(value)),
+    );
+    if (values.size > 1) names.push(layer.nm);
+  }
+  return names;
+}
+
+// A drawing that looks mechanical makes a contact claim whether or not the author declared
+// one. Two channels force the claim to become measurable: the rotation heuristic below (the
+// common case), and an explicit `mechanics: declared` for mechanisms rotation-counting cannot
+// see (belts, pistons, ratchets). `mechanics: decorative` is the attested opposite — the
+// rotation makes no contact claim — and therefore contradicts declaring geometry claims.
+export function validateMechanics(brief, animation) {
+  const errors = [];
+  const mechanics = brief?.mechanics;
+  const claims = brief?.composition?.geometry ?? [];
+  const claimCount = Array.isArray(claims) ? claims.length : 0;
+  if (mechanics != null && !MECHANICS_VALUES.has(mechanics)) {
+    errors.push("mechanics must be declared or decorative");
+    return errors;
+  }
+  if (mechanics === "declared" && claimCount === 0)
+    errors.push(
+      "mechanics: declared requires at least one composition.geometry claim",
+    );
+  if (mechanics === "decorative" && claimCount > 0)
+    errors.push(
+      "mechanics: decorative contradicts declared composition.geometry claims; drop one of the two",
+    );
+  if (mechanics == null && claimCount === 0) {
+    const rotating = rotatingLayerNames(animation);
+    if (rotating.length >= MECHANICS_MINIMUM_ROTATING_LAYERS)
+      errors.push(
+        `layers ${rotating.join(", ")} rotate independently but composition.geometry declares no claims; declare the contact claim, or set mechanics: decorative if the rotation makes none`,
+      );
+  }
+  return errors;
+}
+
 // Structural validation only — no rendering. A geometry claim's actual contact is measured by
 // scripts/lib/geometry.mjs against rendered pixels; this only checks the claim is well formed
 // enough to attempt that measurement (a real window, two distinct existing root layers, a
@@ -155,7 +279,7 @@ export function validateGeometryClaims(brief, animation, profile) {
 
     if (!GEOMETRY_RELATIONS.has(claim.relation))
       errors.push(
-        `${pointer}.relation must be interlocked, disjoint, or contained`,
+        `${pointer}.relation must be interlocked, disjoint, contained, or connected`,
       );
 
     if (
@@ -268,6 +392,25 @@ export function validateGeometryClaims(brief, animation, profile) {
             `${pointer}.criteria.min_engagement_px must be less than max_engagement_px`,
           );
       }
+      if (claim.relation === "connected") {
+        if (!CONNECTED_ENDS.has(criteria.ends))
+          errors.push(
+            `${pointer}.criteria.ends must be start, end, or both for a connected claim`,
+          );
+        if (
+          criteria.max_gap_px != null &&
+          (typeof criteria.max_gap_px !== "number" || criteria.max_gap_px < 0)
+        )
+          errors.push(
+            `${pointer}.criteria.max_gap_px must be a non-negative number`,
+          );
+      } else {
+        for (const key of CONNECTED_ONLY_CRITERIA)
+          if (key in criteria)
+            errors.push(
+              `${pointer}.criteria.${key} only applies to a connected claim`,
+            );
+      }
     }
   });
   return errors;
@@ -302,6 +445,7 @@ export function validateComposition(brief, animation, profile) {
   const layers = [...(animation.layers ?? [])];
   const frames = new Set();
   let hasPoster = false;
+  const slotInstances = new Map();
 
   composition.checkpoints.forEach((checkpoint, checkpointIndex) => {
     const pointer = `composition.checkpoints[${checkpointIndex}]`;
@@ -366,6 +510,15 @@ export function validateComposition(brief, animation, profile) {
         blockBounds.push({ id: block.id, bounds: block.bounds });
       }
 
+      if (
+        block.hold_waiver != null &&
+        (typeof block.hold_waiver !== "string" ||
+          block.hold_waiver.trim().length < 10)
+      )
+        errors.push(
+          `${blockPointer}.hold_waiver must be a string of at least 10 characters explaining the deliberate tradeoff`,
+        );
+
       if (block.slot != null) {
         if (
           typeof block.slot !== "string" ||
@@ -379,6 +532,18 @@ export function validateComposition(brief, animation, profile) {
           if (!layer)
             errors.push(`${blockPointer}.slot must name a text layer`);
           else if (validBounds(block.bounds) && Number.isInteger(frame)) {
+            if (!slotInstances.has(block.slot))
+              slotInstances.set(block.slot, []);
+            slotInstances.get(block.slot).push({
+              frame,
+              layer,
+              blockPointer,
+              waiver:
+                typeof block.hold_waiver === "string" &&
+                block.hold_waiver.trim().length >= 10
+                  ? block.hold_waiver
+                  : null,
+            });
             const document = textDocument(layer, frame);
             const fontSize = document?.s;
             const rawText = String(document?.t ?? "");
@@ -491,5 +656,48 @@ export function validateComposition(brief, animation, profile) {
 
   if (!hasPoster)
     errors.push("composition.checkpoints must include poster_frame");
+
+  // Reading-hold budget gate. The hold is the stable window around the slot's first declared
+  // checkpoint — from the layer's last incoming transform to its next outgoing one — and must
+  // meet references/motion-design.md's reading-time formula for the actual copy. Text whose
+  // stable window runs to the end of the timeline is exempt: a standalone Lottie persists on
+  // its final frame (and a loop repeats), so copy with no exit stays readable indefinitely —
+  // the budget exists for copy that leaves the canvas before a reader can finish it. A
+  // deliberate exception is declared per block as hold_waiver; a waiver whose hold already
+  // passes is itself an error so exemptions cannot outlive their excuse.
+  if (Number.isFinite(profile.fps)) {
+    for (const instances of slotInstances.values()) {
+      const first = instances.reduce((minimum, current) =>
+        current.frame < minimum.frame ? current : minimum,
+      );
+      for (const instance of instances) {
+        if (instance !== first && instance.waiver)
+          errors.push(
+            `${instance.blockPointer}.hold_waiver only counts at the slot's first checkpoint`,
+          );
+      }
+      const text = String(textDocument(first.layer, first.frame)?.t ?? "");
+      if (!text) continue;
+      const window = stableWindow(first.layer, first.frame, profile.frameCount);
+      if (window === null) {
+        errors.push(
+          `${first.blockPointer} checkpoint frame ${first.frame} sits inside a transition, not a hold`,
+        );
+        continue;
+      }
+      const budget = readingBudgetFrames(text, profile.fps);
+      const exits = window.end < profile.frameCount;
+      if (exits && window.hold < budget) {
+        if (!first.waiver)
+          errors.push(
+            `${first.blockPointer} holds ${window.hold} frames (${window.start}-${window.end}) before its exit, below the ${budget}-frame reading budget for its copy; extend the hold, cut copy, or declare hold_waiver`,
+          );
+      } else if (first.waiver) {
+        errors.push(
+          `${first.blockPointer}.hold_waiver is unused: the hold already meets its reading budget`,
+        );
+      }
+    }
+  }
   return errors;
 }

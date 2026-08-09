@@ -4,7 +4,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import YAML from "yaml";
 
-import { validateComposition } from "./composition.mjs";
+import { validateComposition, validateMechanics } from "./composition.mjs";
 import { LIMITS, resolveProfile } from "./profiles.mjs";
 import { pointerToken, readJson, safeLocalFile, sha256 } from "./io.mjs";
 import { estimateTextUnits } from "./text-metrics.mjs";
@@ -482,6 +482,7 @@ export async function validateBundle(bundle) {
       }
       report.errors.push(...validateManagedBackgroundOrder(animation));
       report.errors.push(...validateSlots(animation, bundle.brief));
+      report.errors.push(...validateMechanics(bundle.brief, animation));
       for (const pointer of report.features.line_separators)
         report.errors.push(
           `${pointer}: line separators are not portable in a managed bundle; use one text layer per line instead of \\n or \\r`,

@@ -4,7 +4,10 @@ Run every applicable item, in order, after finalizing `brief.yaml` and `animatio
 running `validate` — this is workflow step 5. On a revision, re-run the whole list, not only the
 items touching the requested change: fixing one reported defect while introducing or missing
 another burns a validation-and-render cycle checking something a reviewer could have caught by eye
-first. Each item quotes the exact fragment of the error string `validate` (or, for item 8,
+first. A revision driven by a visual or composition finding additionally starts by re-inspecting
+the storyboard checkpoint stills before editing (see the Revise route in `SKILL.md`): items 5 and
+6 below are fit arithmetic — they prove a string fits its declared box, never that the composed
+frame reads correctly next to every other element. Each item quotes the exact fragment of the error string `validate` (or, for item 8,
 `geometry`/`verify --geometry`) would report if the check fails, so the citation stays checkable
 against the actual validator rather than a paraphrase that can drift from it.
 
@@ -42,8 +45,11 @@ plus padding`, `differs from equal_size_group`.
 7. **Geometry claim declaration.** Every `composition.geometry` claim has a kebab-case, unique
    `id`, names exactly two distinct existing root layers, and declares a `frames` window that
    stays inside the timeline. A claim on a layer nested inside a precomp asset cannot be named at
-   all — flatten it to a root layer first, or drop the claim. Prevents: `id must be kebab-case`,
-   `must name exactly two distinct layers`, `frames must stay inside the timeline`.
+   all — flatten it to a root layer first, or drop the claim. A `connected` claim declares which
+   endpoint attaches (`ends`), and its connected-only criteria stay off every other relation.
+   Prevents: `id must be kebab-case`, `must name exactly two distinct layers`, `frames must stay
+inside the timeline`, `criteria.ends must be start, end, or both`, `only applies to a connected
+claim`.
 8. **Rendered geometry claim risk** (only when the brief declares `composition.geometry` claims;
    checked after `validate` passes, before the first full render — workflow step 8, not step 5,
    since it requires an actual render). Per [motion-design.md](motion-design.md)'s
@@ -52,8 +58,13 @@ plus padding`, `differs from equal_size_group`.
    clearance, expect the measurement to report contact as `tangent-only`, bodies as
    `interpenetrate`, or a `hollow, stroke-only shape` that defeats the default clearance
    heuristic — declare `criteria.body_layers` for an exact body-overlap test in that last case
-   rather than treating a missing measurement as a pass. Prevents (as findings, once measured):
-   `contact is tangent-only`, `bodies interpenetrate`, `hollow, stroke-only shape`.
+   rather than treating a missing measurement as a pass. For a `connected` claim, the endpoint is
+   read from the connector's declared path vertices — a trim-revealed connector's rendered pixels
+   are not stable ground truth — so a closed path, a keyframed path, or a keyframed connector
+   transform cannot be measured at all, and the declared endpoint must actually land on the
+   target's rendered pixels. Prevents (as findings, once measured): `contact is tangent-only`,
+   `bodies interpenetrate`, `hollow, stroke-only shape`, `exceeds max_gap_px`, `start and end are
+undefined for a loop`.
 9. **Beat sheet and vocabulary discipline** (only when the bundle has more than one distinct
    phase or scene). `motion.md`'s beat sheet has one entry per phase, each naming what it
    establishes and how it connects to its neighbors. No two adjacent phases repeat the same
@@ -61,3 +72,18 @@ plus padding`, `differs from equal_size_group`.
    design pass, not a deliberate rhythm. This item has no validator finding: `validate` cannot see
    narrative structure, only JSON structure, so a bundle can pass every check above and still fail
    this one silently unless it is checked by eye.
+10. **Reading-hold budget.** Every text block whose stable window ends before the timeline does
+    holds at least [motion-design.md](motion-design.md)'s reading budget for its actual copy,
+    measured from the layer's last incoming transform to its next outgoing one; text with no exit
+    is exempt, since a standalone Lottie persists on its final frame. Each checkpoint frame sits
+    inside a hold, never inside a transition. A deliberate exception is a per-block `hold_waiver`
+    with a real reason; a waiver whose hold already passes must be removed. Prevents: `reading
+budget`, `sits inside a transition, not a hold`, `hold_waiver is unused`, `must be a string of at
+least 10 characters`, `only counts at the slot's first checkpoint`.
+11. **Mechanics declaration.** A bundle with two or more independently rotating non-background
+    root layers makes a visible contact claim: declare it in `composition.geometry`, or set
+    `mechanics: decorative` when the rotation genuinely claims no contact. `mechanics: declared`
+    exists for mechanisms rotation-counting cannot see (belts, pistons, ratchets) and requires at
+    least one claim. Prevents: `rotate independently`, `mechanics must be declared or decorative`,
+    `requires at least one composition.geometry claim`, `contradicts declared composition.geometry
+claims`.

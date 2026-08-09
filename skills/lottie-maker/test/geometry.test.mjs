@@ -8,12 +8,14 @@ import YAML from "yaml";
 
 import { inspectAnimation, loadBundle } from "../scripts/lib/lottie.mjs";
 import {
+  connectorEndpoint,
   detectDegeneracy,
   evaluateClaim,
   inradiusPx,
   isolateAnimation,
   maskFromRgba,
   measurePair,
+  minGapPx,
   summarize,
   verifyGeometry,
 } from "../scripts/lib/geometry.mjs";
@@ -497,4 +499,153 @@ test("measurements_sha256 is deterministic across repeated runs", async () => {
     {},
   );
   assert.equal(first.measurements_sha256, second.measurements_sha256);
+});
+
+// --- connected claims (port-validation-gaps) ---
+
+function connectorAnimation(overrides = {}) {
+  return {
+    layers: [
+      {
+        nm: "connector",
+        ks: {
+          o: { a: 0, k: 100 },
+          r: { a: 0, k: 0 },
+          p: { a: 0, k: [10, 20, 0] },
+          a: { a: 0, k: [0, 0, 0] },
+          s: { a: 0, k: [100, 100, 100] },
+          ...overrides.layerKs,
+        },
+        shapes: [
+          {
+            ty: "gr",
+            it: [
+              {
+                ty: "sh",
+                ks: overrides.path ?? {
+                  a: 0,
+                  k: {
+                    c: false,
+                    v: [
+                      [0, 0],
+                      [5, 0],
+                    ],
+                    i: [
+                      [0, 0],
+                      [0, 0],
+                    ],
+                    o: [
+                      [0, 0],
+                      [0, 0],
+                    ],
+                  },
+                },
+              },
+              {
+                ty: "tr",
+                p: { a: 0, k: [2, 3] },
+                a: { a: 0, k: [0, 0] },
+                s: { a: 0, k: [200, 200] },
+                r: { a: 0, k: 0 },
+                o: { a: 0, k: 100 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+test("connectorEndpoint reads declared vertices through the group and layer transforms", () => {
+  const animation = connectorAnimation();
+  // start [0,0]: group scale 200% then +[2,3], layer +[10,20] -> [12, 23]
+  assert.deepEqual(
+    connectorEndpoint(animation, "connector", "start").point,
+    [12, 23],
+  );
+  // end [5,0]: 5*2=10 +2 = 12, +10 -> [22, 23]
+  assert.deepEqual(
+    connectorEndpoint(animation, "connector", "end").point,
+    [22, 23],
+  );
+});
+
+test("connectorEndpoint refuses closed paths, keyframed paths, and keyframed transforms", () => {
+  const closed = connectorAnimation({
+    path: {
+      a: 0,
+      k: {
+        c: true,
+        v: [
+          [0, 0],
+          [5, 0],
+        ],
+        i: [
+          [0, 0],
+          [0, 0],
+        ],
+        o: [
+          [0, 0],
+          [0, 0],
+        ],
+      },
+    },
+  });
+  assert.match(connectorEndpoint(closed, "connector", "end").reason, /closed/);
+
+  const keyframedPath = connectorAnimation({ path: { a: 1, k: [] } });
+  assert.match(
+    connectorEndpoint(keyframedPath, "connector", "end").reason,
+    /keyframed path/,
+  );
+
+  const keyframedTransform = connectorAnimation({
+    layerKs: { p: { a: 1, k: [{ t: 0, s: [0, 0, 0] }] } },
+  });
+  assert.match(
+    connectorEndpoint(keyframedTransform, "connector", "end").reason,
+    /keyframed transform/,
+  );
+
+  assert.match(
+    connectorEndpoint(connectorAnimation(), "missing", "end").reason,
+    /no root layer/,
+  );
+});
+
+test("minGapPx measures the distance from a point to the nearest occupied pixel", () => {
+  const mask = {
+    width: 4,
+    height: 1,
+    occupancy: Uint8Array.from([0, 0, 0, 1]),
+    pixels: 1,
+  };
+  assert.equal(minGapPx(mask, [0, 0]), 3);
+  assert.equal(minGapPx(mask, [3, 0]), 0);
+  assert.equal(
+    minGapPx(
+      { width: 2, height: 1, occupancy: Uint8Array.from([0, 0]), pixels: 0 },
+      [0, 0],
+    ),
+    null,
+  );
+});
+
+test("evaluateClaim gates a connected claim on max_gap_px and empty targets", () => {
+  const claim = { relation: "connected", criteria: { max_gap_px: 3 } };
+  assert.equal(
+    evaluateClaim(claim, [{ frame: 0, gap_end_px: 2 }]).status,
+    "valid",
+  );
+  const failed = evaluateClaim(claim, [
+    { frame: 0, gap_end_px: 2 },
+    { frame: 1, gap_end_px: 5 },
+  ]);
+  assert.equal(failed.status, "failed");
+  assert.match(failed.findings[0], /gap_end_px maximum 5 at frame 1/);
+
+  const empty = evaluateClaim(claim, [{ frame: 0, target_empty: true }]);
+  assert.equal(empty.status, "failed");
+  assert.match(empty.findings[0], /rendered no pixels/);
 });

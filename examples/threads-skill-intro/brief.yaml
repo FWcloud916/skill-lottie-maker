@@ -65,12 +65,47 @@ fonts:
 assets: []
 composition:
   version: 1
+  geometry:
+    - id: create-revise-mesh
+      relation: interlocked
+      layers: [gear-create, gear-revise]
+      frames: { start: 320, count: 24 }
+      criteria: { min_engagement_px: 30 }
+      note: top edge of the 2x2 train; counter-rotating at the declared 251px working center distance
+    - id: create-diagnose-mesh
+      relation: interlocked
+      layers: [gear-create, gear-diagnose]
+      frames: { start: 320, count: 24 }
+      criteria: { min_engagement_px: 30 }
+      note: left edge of the 2x2 train
+    - id: revise-verify-mesh
+      relation: interlocked
+      layers: [gear-revise, gear-verify]
+      frames: { start: 320, count: 24 }
+      criteria: { min_engagement_px: 30 }
+      note: right edge of the 2x2 train
+    - id: diagnose-verify-mesh
+      relation: interlocked
+      layers: [gear-diagnose, gear-verify]
+      frames: { start: 320, count: 24 }
+      criteria: { min_engagement_px: 30 }
+      note: bottom edge of the 2x2 train
+    - id: create-verify-disjoint
+      relation: disjoint
+      layers: [gear-create, gear-verify]
+      frames: { start: 320, count: 24 }
+      note: diagonal pair rotates in the same direction and must never touch
+    - id: revise-diagnose-disjoint
+      relation: disjoint
+      layers: [gear-revise, gear-diagnose]
+      frames: { start: 320, count: 24 }
+      note: diagonal pair rotates in the same direction and must never touch
   checkpoints:
     - frame: 72
       reading_order: [title, body, code, copy, timing, assets, layout]
       blocks:
         - {id: title, slot: act1Title, role: anchor, bounds: [0.073, 0.18, 0.5, 0.1], align: left, max_lines: 1, min_font_size: 68}
-        - {id: body, slot: act1Body, role: support, bounds: [0.073, 0.31, 0.58, 0.07], align: left, max_lines: 1, min_font_size: 34}
+        - {id: body, slot: act1Body, role: support, bounds: [0.073, 0.31, 0.58, 0.07], align: left, max_lines: 1, min_font_size: 34, hold_waiver: 第一幕內文與所屬幕一同退場；68 幀是四幕十六秒既定結構下的取捨，發布時已人工確認可讀}
         - {id: code, slot: act1Code, role: support, bounds: [0.14, 0.55, 0.72, 0.06], align: left, max_lines: 1, min_font_size: 26, card_layer: act1-code-card, padding: 30}
         - {id: copy, slot: act1Copy, role: active, bounds: [0.13, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1CopyCard, padding: 18, equal_size_group: inputs}
         - {id: timing, slot: act1Timing, role: active, bounds: [0.35, 0.77, 0.085, 0.045], align: center, max_lines: 1, min_font_size: 24, card_layer: act1TimingCard, padding: 18, equal_size_group: inputs}

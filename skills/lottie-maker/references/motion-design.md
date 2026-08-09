@@ -66,6 +66,12 @@ must sit inside a hold, never inside a transition — the poster frame is the st
 state. When the budget does not fit the intended duration, cut copy or split states; never compress
 a hold below its floor to make room for more motion.
 
+For a managed bundle this budget is enforced, not advisory: `validate` measures each text block's
+stable window around its first declared checkpoint and fails when copy exits before its budget is
+met. Text with no exit is exempt — a standalone Lottie persists on its final frame — and a
+deliberate exception is declared per block as `hold_waiver` with a reason (see
+`references/brief-contract.md`).
+
 ## Mechanical credibility
 
 A drawing of a mechanism makes a physical claim, and `geometry`/`verify --geometry` measures
@@ -93,7 +99,11 @@ correct pair. Before declaring any meshing, rolling, linking, or synchronized mo
    tooth touches at its corners, not where the ideal profile would.
 6. **Declare the claim** in the bundle's `composition.geometry` block (see
    `references/brief-contract.md`) so it is measured against rendered pixels, not eyeballed — a
-   claim that exists only as a sentence in `motion.md` is not verified by anything.
+   claim that exists only as a sentence in `motion.md` is not verified by anything. This is no
+   longer optional for the common case: `validate` blocks an animation whose two or more
+   independently rotating layers carry no geometry claims, until the claim is declared or the
+   rotation is attested as `mechanics: decorative`. A connector that must visibly attach to its
+   target declares a `connected` claim the same way.
 
 When a mechanism cannot be derived cleanly, simplify the visual claim (silhouettes, abstract
 linkage, sequential highlights) rather than faking precision.

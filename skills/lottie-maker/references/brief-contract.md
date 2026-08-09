@@ -64,6 +64,13 @@ checkpoint describes a stable information state:
   another block at the same checkpoint.
 - A text block sets `slot`, `align`, `max_lines`, and `min_font_size`. Its named native text layer,
   sampled anchor, line count, estimated width, and height must fit the declared block.
+- A text block whose stable window ends before the timeline does must hold at least the reading
+  budget `motion-design.md` derives from its actual copy, measured from the layer's last incoming
+  transform to its next outgoing one at the slot's first declared checkpoint. Text with no exit is
+  exempt — a standalone Lottie persists on its final frame, so copy that never leaves stays
+  readable indefinitely. A deliberate exception is declared on that first-checkpoint block as
+  `hold_waiver: <reason of at least 10 characters>`; a waiver whose hold already meets the budget
+  is itself an error, so an exemption cannot outlive its excuse.
 - A card-backed block may set `card_layer` and pixel `padding`. `equal_size_group` requires matching
   rectangle dimensions across peer cards. A centered stroke paints half its width outward from the
   nominal shape, so `padding` and any declared clearance must budget for the full stroke width plus
@@ -111,11 +118,45 @@ composition:
       note: teeth engage without the hubs touching
 ```
 
+A fourth relation, `connected`, proves a connector's declared endpoint actually touches its
+target's rendered pixels — a claim the bounds-level checks cannot make:
+
+```yaml
+- id: rail-to-node
+  relation: connected
+  layers: [flow-rail, node-card] # [connector, target]
+  frames: { start: 96, count: 24 }
+  criteria:
+    ends: end # start | end | both — which declared endpoint must attach
+    max_gap_px: 3 # default 3 — half a stroke width plus antialiasing
+```
+
+The connector itself is never isolation-rendered: a trim-revealed connector is invisible or
+partial at most sampled frames, so its rendered pixels are not stable ground truth — its declared
+`sh` path vertices are, since trim changes how much of the path is drawn, never the vertices. The
+endpoint is read once from the path (through the shape group's and layer's static transforms;
+keyframed ones cannot be reduced to one coordinate and fail the claim), and only the target is
+rendered per sampled frame. The degeneracy detector is deliberately not applied to `connected`
+claims: it exists because a periodic mechanism can alias against a matching sample stride, and a
+connector-target pair has no periodic motion — a constant gap across every sampled frame is the
+expected, correct outcome for a properly attached connector.
+
 Run `geometry <bundle> --out <dir>` (or `verify --geometry`) to measure it. `id` is kebab-case and
 unique; `layers` names exactly two distinct existing root layers; the sampling window stays inside
 the timeline and covers at least 3 frames. A claim with no `composition.geometry` block is a no-op
 — `geometry` reports `status: "skipped"` rather than an error, so declaring no claims is always
-valid.
+valid — unless the animation _looks_ mechanical, in which case `validate` forces a decision:
+
+## Mechanics declaration
+
+A drawing that looks mechanical makes a contact claim whether or not the author declared one. Two
+channels force that claim to become measurable. Automatically: an animation with two or more
+independently rotating non-background root layers (a keyframed `ks.r` whose values actually vary)
+and no `composition.geometry` claims fails `validate` until the author either declares the claim
+or sets the root brief field `mechanics: decorative`, attesting the rotation makes no contact
+claim. Explicitly: `mechanics: declared` requires at least one geometry claim, for mechanisms
+rotation-counting cannot see — belts, pistons, ratchets. `mechanics: decorative` alongside
+declared geometry claims is a contradiction and is rejected.
 
 The two layers are rendered in isolation — every other root layer's opacity zeroed — so the
 measurement comes from which layer drew a pixel, never from its color; palette-based part

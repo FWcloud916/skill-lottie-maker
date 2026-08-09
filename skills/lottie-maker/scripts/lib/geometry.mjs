@@ -204,6 +204,102 @@ export function measurePair(maskA, maskB) {
   };
 }
 
+// A trim-revealed connector renders empty or partial at most sampled frames, so its rendered
+// pixels are not stable ground truth — its declared path vertices are: they never change frame
+// to frame, only how much of the path is drawn does. Reads the first `sh` path of the named
+// root layer and returns the requested end's canvas coordinate with the shape group's and the
+// layer's static transforms applied. A closed path has no start or end; a keyframed path or
+// transform cannot be reduced to one coordinate — both return a `reason` instead of a point.
+export function connectorEndpoint(animation, layerName, end) {
+  const layer = (animation?.layers ?? []).find(
+    (candidate) => candidate?.nm === layerName,
+  );
+  if (!layer) return { reason: `no root layer is named "${layerName}"` };
+  let pathItem = null;
+  let groupTransform = null;
+  for (const group of layer.shapes ?? []) {
+    const items = group?.it ?? [];
+    const candidate = items.find((item) => item?.ty === "sh");
+    if (candidate) {
+      pathItem = candidate;
+      groupTransform = items.find((item) => item?.ty === "tr") ?? null;
+      break;
+    }
+  }
+  if (!pathItem)
+    return {
+      reason: `layer "${layerName}" has no sh path to read an endpoint from`,
+    };
+  if (pathItem.ks?.a === 1)
+    return {
+      reason: `layer "${layerName}" has a keyframed path; a connected claim needs static vertices`,
+    };
+  const path = pathItem.ks?.k;
+  const vertices = path?.v;
+  if (!Array.isArray(vertices) || !vertices.length)
+    return { reason: `layer "${layerName}" path has no vertices` };
+  if (path.c)
+    return {
+      reason: `layer "${layerName}" path is closed; start and end are undefined for a loop`,
+    };
+  const raw = end === "start" ? vertices[0] : vertices[vertices.length - 1];
+  let point = [Number(raw[0]), Number(raw[1])];
+  const transforms = [groupTransform, layer.ks].filter(Boolean);
+  for (const transform of transforms) {
+    const applied = applyStaticTransform(point, transform, layerName);
+    if (applied.reason) return applied;
+    point = applied.point;
+  }
+  return { point };
+}
+
+function staticValue(property) {
+  if (!property || typeof property !== "object") return undefined;
+  if (property.a === 1) return null;
+  return property.k;
+}
+
+function applyStaticTransform(point, transform, layerName) {
+  const position = staticValue(transform.p);
+  const anchor = staticValue(transform.a);
+  const scale = staticValue(transform.s);
+  const rotation = staticValue(transform.r);
+  if (
+    position === null ||
+    anchor === null ||
+    scale === null ||
+    rotation === null
+  )
+    return {
+      reason: `layer "${layerName}" has a keyframed transform; a connected claim needs static transforms`,
+    };
+  const [px, py] = Array.isArray(position) ? position : [0, 0];
+  const [ax, ay] = Array.isArray(anchor) ? anchor : [0, 0];
+  const [sx, sy] = Array.isArray(scale) ? scale : [100, 100];
+  const degrees = Array.isArray(rotation) ? rotation[0] : (rotation ?? 0);
+  const dx = (point[0] - ax) * (sx / 100);
+  const dy = (point[1] - ay) * (sy / 100);
+  const theta = ((degrees ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  return { point: [dx * cos - dy * sin + px, dx * sin + dy * cos + py] };
+}
+
+// Minimum Euclidean distance from `point` to any occupied pixel; null when the mask is empty.
+export function minGapPx(mask, point) {
+  if (!mask.pixels) return null;
+  const [px, py] = point;
+  let best = Infinity;
+  for (let y = 0; y < mask.height; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      if (!mask.occupancy[y * mask.width + x]) continue;
+      const distance = Math.hypot(x - px, y - py);
+      if (distance < best) best = distance;
+    }
+  }
+  return round3(best);
+}
+
 export function summarize(measurements, keys) {
   const summary = {};
   for (const key of keys) {
@@ -310,6 +406,24 @@ export function evaluateClaim(claim, measurements) {
       findings.push(
         `outside_pixels maximum ${maxOutside} exceeds max_outside_px ${maxOutsidePx}`,
       );
+  } else if (claim.relation === "connected") {
+    const maxGapPx = criteria.max_gap_px ?? 3;
+    for (const key of ["gap_start_px", "gap_end_px"]) {
+      const values = measurements
+        .map((m) => m[key])
+        .filter((value) => typeof value === "number");
+      if (!values.length) continue;
+      const worst = Math.max(...values);
+      const worstFrame = measurements[values.indexOf(worst)]?.frame;
+      if (worst > maxGapPx)
+        findings.push(
+          `${key} maximum ${worst} at frame ${worstFrame} exceeds max_gap_px ${maxGapPx}; the declared endpoint does not touch the target's rendered pixels`,
+        );
+    }
+    if (measurements.some((m) => m.target_empty))
+      findings.push(
+        "the target layer rendered no pixels at one or more sampled frames; the gap cannot be measured against an empty mask",
+      );
   }
   return { status: findings.length ? "failed" : "valid", findings };
 }
@@ -357,6 +471,7 @@ function resolveClaim(claim, frameCount) {
     min_body_clearance_px: 0,
     max_overlap_pixels: 0,
     max_outside_px: 0,
+    max_gap_px: 3,
     ...claim.criteria,
   };
   return {
@@ -384,6 +499,13 @@ function pickWorstFrame(claim, measurements) {
   if (claim.relation === "contained") {
     return measurements.reduce((max, current) =>
       (current.outside_pixels ?? 0) > (max.outside_pixels ?? 0) ? current : max,
+    ).frame;
+  }
+  if (claim.relation === "connected") {
+    const worstGap = (measurement) =>
+      Math.max(measurement.gap_start_px ?? 0, measurement.gap_end_px ?? 0);
+    return measurements.reduce((max, current) =>
+      worstGap(current) > worstGap(max) ? current : max,
     ).frame;
   }
   return measurements[0].frame;
@@ -426,6 +548,13 @@ export async function verifyGeometry(
   const layerNames = new Set();
   let estimatedRenders = 0;
   for (const claim of resolvedClaims) {
+    // A connected claim never renders its connector — the endpoint comes from the declared
+    // path vertices — so only the target layer costs isolated renders.
+    if (claim.relation === "connected") {
+      layerNames.add(claim.layers[1]);
+      estimatedRenders += claim.sampledFrames.length;
+      continue;
+    }
     for (const name of claim.layers) layerNames.add(name);
     let perFrameLayers = claim.layers.length;
     if (claim.criteria.body_layers) {
@@ -513,6 +642,74 @@ export async function verifyGeometry(
     for (const claim of resolvedClaims) {
       const [layerA, layerB] = claim.layers;
       const alphaThreshold = claim.criteria.alpha_threshold;
+
+      if (claim.relation === "connected") {
+        const ends =
+          claim.criteria.ends === "both"
+            ? ["start", "end"]
+            : [claim.criteria.ends];
+        const endpoints = {};
+        let endpointReason = null;
+        for (const end of ends) {
+          const resolved = connectorEndpoint(animation, layerA, end);
+          if (resolved.reason) {
+            endpointReason = resolved.reason;
+            break;
+          }
+          endpoints[end] = resolved.point;
+        }
+        if (endpointReason) {
+          claimResults.push({
+            id: claim.id,
+            relation: claim.relation,
+            layers: claim.layers,
+            frames: claim.frames,
+            sampled_frames: claim.sampledFrames,
+            criteria: claim.criteria,
+            status: "failed",
+            degenerate: false,
+            measurements: [],
+            summary: {},
+            findings: [endpointReason],
+            worst_frame: claim.sampledFrames[0],
+            evidence: {},
+          });
+          continue;
+        }
+        const measurements = claim.sampledFrames.map((frame) => {
+          const mask = maskAt(layerB, frame, alphaThreshold);
+          const measurement = { frame };
+          for (const end of ends) {
+            const gap = minGapPx(mask, endpoints[end]);
+            if (gap === null) measurement.target_empty = true;
+            else measurement[`gap_${end}_px`] = gap;
+          }
+          return measurement;
+        });
+        const summary = summarize(measurements, ["gap_start_px", "gap_end_px"]);
+        // The degeneracy detector is deliberately not applied: it exists because a periodic
+        // mechanism can alias against a matching sample stride, and a connector-target pair
+        // has no periodic motion in this grammar — a constant gap across every sampled frame
+        // is the expected, correct outcome for a properly attached connector, not a red flag.
+        const evaluation = evaluateClaim(claim, measurements);
+        claimResults.push({
+          id: claim.id,
+          relation: claim.relation,
+          layers: claim.layers,
+          frames: claim.frames,
+          sampled_frames: claim.sampledFrames,
+          criteria: claim.criteria,
+          status: evaluation.status,
+          degenerate: false,
+          measurements,
+          summary,
+          findings: evaluation.findings,
+          worst_frame: pickWorstFrame(claim, measurements),
+          evidence: {},
+        });
+        continue;
+      }
+
       const measurements = claim.sampledFrames.map((frame) => {
         const measurement = measureAt(layerA, layerB, frame, alphaThreshold);
         if (claim.criteria.body_layers) {
@@ -596,7 +793,10 @@ export async function verifyGeometry(
         await writePngFromSurface(kit, surface, compositeFile);
         const layerMasks = {};
         for (const name of claim.layers) {
+          // A connected claim's connector is never isolation-rendered (its endpoint comes
+          // from declared vertices), so it has no managed instance to snapshot.
           const managed = managedByLayer.get(name);
+          if (!managed) continue;
           canvas.clear(kit.TRANSPARENT);
           managed.seekFrame(claim.worst_frame);
           managed.render(canvas, kit.LTRBRect(0, 0, width, height));
